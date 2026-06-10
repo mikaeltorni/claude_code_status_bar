@@ -78,7 +78,7 @@ def main() -> None:
     size = ctx.get("context_window_size")
     pct = ctx.get("used_percentage")
     if used is not None and size:
-        ctx_str = f"ctx {_fmt_tokens(used)}/{_fmt_tokens(size)}"
+        ctx_str = f"{_fmt_tokens(used)}/{_fmt_tokens(size)}"
         if pct is not None:
             ctx_str += f" ({pct}%)"
         parts.append(ctx_str)
