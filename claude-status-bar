@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+"""Claude Code status bar script.
+
+Claude Code invokes this with the status-line JSON on stdin and renders the
+first line printed to stdout in the bottom bar (next to "bypass permissions on").
+
+Bar layout:
+    model + reasoning effort | full project path | context-window usage |
+    5h rate limit | weekly rate limit | diff count | total cost
+"""
+
+import json
+import sys
+import time
+
+
+def _fmt_tokens(n: float) -> str:
+    """Format a token count as a compact string (e.g. 63.2k, 1.0M)."""
+    n = int(n)
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}k"
+    return str(n)
+
+
+def _fmt_reset(ts) -> str:
+    """Format a unix reset timestamp as compact time-remaining (e.g. 2h13m)."""
+    try:
+        remaining = int(ts) - int(time.time())
+    except (TypeError, ValueError):
+        return ""
+    if remaining <= 0:
+        return "now"
+    hours, rem = divmod(remaining, 3600)
+    minutes = rem // 60
+    if hours:
+        return f"{hours}h{minutes:02d}m"
+    return f"{minutes}m"
+
+
+def _fmt_reset_day(ts) -> str:
+    """Format a unix reset timestamp as local weekday + clock time (e.g. Mon 14:30)."""
+    try:
+        reset = int(ts)
+    except (TypeError, ValueError):
+        return ""
+    return time.strftime("%a %H:%M", time.localtime(reset))
+
+
+def main() -> None:
+    """Read status-line input from stdin and print the bar text."""
+    try:
+        data = json.load(sys.stdin)
+    except (json.JSONDecodeError, EOFError, ValueError):
+        data = {}
+
+    parts = []
+
+    # Model + reasoning effort (one/two words).
+    model = data.get("model") or {}
+    model_name = model.get("display_name") or model.get("id") or ""
+    effort = (data.get("effort") or {}).get("level")
+    if model_name and effort:
+        parts.append(f"{model_name} · {effort}")
+    elif model_name:
+        parts.append(str(model_name))
+
+    # Full project path.
+    workspace = data.get("workspace") or {}
+    project_path = workspace.get("project_dir") or workspace.get("current_dir") or data.get("cwd")
+    if project_path:
+        parts.append(str(project_path))
+
+    # Context-window usage in numbers.
+    ctx = data.get("context_window") or {}
+    used = ctx.get("total_input_tokens")
+    size = ctx.get("context_window_size")
+    pct = ctx.get("used_percentage")
+    if used is not None and size:
+        ctx_str = f"ctx {_fmt_tokens(used)}/{_fmt_tokens(size)}"
+        if pct is not None:
+            ctx_str += f" ({pct}%)"
+        parts.append(ctx_str)
+
+    # Rate limits — 5-hour and weekly windows, shown as remaining (100 - used).
+    rl = data.get("rate_limits") or {}
+    five = rl.get("five_hour") or {}
+    if five.get("used_percentage") is not None:
+        reset = _fmt_reset(five.get("resets_at"))
+        parts.append(f"5h:{100 - five['used_percentage']}% left" + (f" (~{reset})" if reset else ""))
+    week = rl.get("seven_day") or {}
+    if week.get("used_percentage") is not None:
+        reset = _fmt_reset(week.get("resets_at"))
+        reset_day = _fmt_reset_day(week.get("resets_at"))
+        suffix = ""
+        if reset_day:
+            suffix = f" (resets {reset_day}" + (f", ~{reset})" if reset else ")")
+        elif reset:
+            suffix = f" (~{reset})"
+        parts.append(f"wk:{100 - week['used_percentage']}% left" + suffix)
+
+    # Diff count and total cost.
+    cost = data.get("cost") or {}
+    added = cost.get("total_lines_added")
+    removed = cost.get("total_lines_removed")
+    if added is not None or removed is not None:
+        parts.append(f"+{added or 0}/-{removed or 0}")
+    usd = cost.get("total_cost_usd")
+    if usd is not None:
+        parts.append(f"${usd:.2f}")
+
+    print(" | ".join(p for p in parts if p))
+
+
+if __name__ == "__main__":
+    main()
