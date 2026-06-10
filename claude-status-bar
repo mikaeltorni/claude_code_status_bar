@@ -88,17 +88,12 @@ def main() -> None:
     five = rl.get("five_hour") or {}
     if five.get("used_percentage") is not None:
         reset = _fmt_reset(five.get("resets_at"))
-        parts.append(f"5h:{100 - five['used_percentage']}% left" + (f" (~{reset})" if reset else ""))
+        parts.append(f"5h:{round(100 - five['used_percentage'])}% left" + (f" (~{reset})" if reset else ""))
     week = rl.get("seven_day") or {}
     if week.get("used_percentage") is not None:
-        reset = _fmt_reset(week.get("resets_at"))
         reset_day = _fmt_reset_day(week.get("resets_at"))
-        suffix = ""
-        if reset_day:
-            suffix = f" (resets {reset_day}" + (f", ~{reset})" if reset else ")")
-        elif reset:
-            suffix = f" (~{reset})"
-        parts.append(f"wk:{100 - week['used_percentage']}% left" + suffix)
+        suffix = f" (resets {reset_day})" if reset_day else ""
+        parts.append(f"wk:{round(100 - week['used_percentage'])}% left" + suffix)
 
     # Diff count and total cost.
     cost = data.get("cost") or {}
