@@ -84,6 +84,19 @@ echo '{"model":{"display_name":"Opus"},"rate_limits":{"seven_day":{"used_percent
   | python3 claude-status-bar
 ```
 
+### Debugging
+
+The bar must emit exactly one stdout line, so diagnostics are opt-in and routed
+to a file. Set `CLAUDE_STATUS_BAR_DEBUG=1` to record events (such as malformed
+input) under `<script-dir>/.log/status-bar.log`:
+
+```bash
+echo 'not json' | CLAUDE_STATUS_BAR_DEBUG=1 python3 claude-status-bar
+cat .log/status-bar.log
+```
+
+The `.log/` directory is git-ignored — log files are runtime artifacts.
+
 ## License
 
 See [LICENSE.md](LICENSE.md).

@@ -5,14 +5,46 @@ Claude Code invokes this with the status-line JSON on stdin and renders the
 first line printed to stdout in the bottom bar (next to "bypass permissions on").
 
 Bar layout:
-    model + reasoning effort | full project path | context-window usage |
+    model + reasoning effort | repository name | context-window usage |
     5h rate limit | weekly rate limit | diff count | total cost
+
+Logging:
+    The bar must print exactly one line to stdout, so logging is opt-in and
+    routed to a file, never stdout/stderr. Set CLAUDE_STATUS_BAR_DEBUG=1 to
+    record diagnostics (e.g. malformed input) under ``<script-dir>/.log/``.
 """
 
 import json
 import os
 import sys
 import time
+
+
+def _log(message: str) -> None:
+    """Append a timestamped diagnostic line to the debug log when enabled.
+
+    Logging is a no-op unless ``CLAUDE_STATUS_BAR_DEBUG`` is set to a truthy
+    value, keeping the status-line hot path silent and fast by default. When
+    enabled, lines are written to ``<script-dir>/.log/status-bar.log``. Any
+    logging failure is swallowed so diagnostics can never break the bar.
+
+    Args:
+        message: Human-readable diagnostic text to record.
+
+    Returns:
+        None.
+    """
+    if os.environ.get("CLAUDE_STATUS_BAR_DEBUG", "") in ("", "0", "false", "no"):
+        return
+    try:
+        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".log")
+        os.makedirs(log_dir, exist_ok=True)
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        with open(os.path.join(log_dir, "status-bar.log"), "a", encoding="utf-8") as fh:
+            fh.write(f"{stamp} {message}\n")
+    except OSError:
+        # Diagnostics are best-effort; never let logging break the status line.
+        pass
 
 
 def _fmt_tokens(n: float) -> str:
@@ -53,7 +85,8 @@ def main() -> None:
     """Read status-line input from stdin and print the bar text."""
     try:
         data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError, ValueError):
+    except (json.JSONDecodeError, EOFError, ValueError) as exc:
+        _log(f"failed to parse status-line JSON from stdin: {exc!r}")
         data = {}
 
     parts = []

@@ -1,0 +1,6 @@
+# Runtime log artifacts — see CLAUDE_STATUS_BAR_DEBUG in claude-status-bar.
+.log/
+
+# Python bytecode caches.
+__pycache__/
+*.pyc
