@@ -10,6 +10,7 @@ Bar layout:
 """
 
 import json
+import os
 import sys
 import time
 
@@ -70,7 +71,7 @@ def main() -> None:
     workspace = data.get("workspace") or {}
     project_path = workspace.get("project_dir") or workspace.get("current_dir") or data.get("cwd")
     if project_path:
-        parts.append(str(project_path))
+        parts.append(os.path.basename(str(project_path).rstrip("/")))
 
     # Context-window usage in numbers.
     ctx = data.get("context_window") or {}
