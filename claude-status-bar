@@ -93,7 +93,7 @@ def main() -> None:
     week = rl.get("seven_day") or {}
     if week.get("used_percentage") is not None:
         reset_day = _fmt_reset_day(week.get("resets_at"))
-        suffix = f" (resets {reset_day})" if reset_day else ""
+        suffix = f" ({reset_day})" if reset_day else ""
         parts.append(f"wk:{round(100 - week['used_percentage'])}%" + suffix)
 
     # Diff count and total cost.
