@@ -9,26 +9,30 @@ idempotent installer that wires it into `~/.claude/settings.json`.
 ## Bar layout
 
 ```
-model · effort | /full/project/path | ctx 63.2k/200.0k (31%) | 5h:90% left (~2h13m) | wk:60% left (resets Sat 01:48, ~55h33m) | +120/-8 | $1.42
+Opus · low | claude_code_status_bar | 63.2k/200.0k (31%) | 5h:90% (~2h13m) | wk:60% (Sat 22:22) | +120/-8 | $1.42
 ```
 
-| Segment            | Source field                         | Example                                   |
-| ------------------ | ------------------------------------ | ----------------------------------------- |
-| Model + effort     | `model.display_name`, `effort.level` | `Opus · low`                              |
-| Project path       | `workspace.project_dir` / `cwd`      | `/home/mk/projects/...`                   |
-| Context window     | `context_window.*`                   | `ctx 63.2k/200.0k (31%)`                  |
-| 5-hour rate limit  | `rate_limits.five_hour`              | `5h:90% left (~2h13m)`                    |
-| Weekly rate limit  | `rate_limits.seven_day`              | `wk:60% left (resets Sat 01:48, ~55h33m)` |
-| Diff line count    | `cost.total_lines_added/removed`     | `+120/-8`                                 |
-| Total session cost | `cost.total_cost_usd`                | `$1.42`                                   |
+| Segment            | Source field                         | Example                    |
+| ------------------ | ------------------------------------ | -------------------------- |
+| Model + effort     | `model.display_name`, `effort.level` | `Opus · low`               |
+| Repository name    | `workspace.project_dir` / `cwd`      | `claude_code_status_bar`   |
+| Context window     | `context_window.*`                   | `63.2k/200.0k (31%)`       |
+| 5-hour rate limit  | `rate_limits.five_hour`              | `5h:90% (~2h13m)`          |
+| Weekly rate limit  | `rate_limits.seven_day`              | `wk:60% (Sat 22:22)`       |
+| Diff line count    | `cost.total_lines_added/removed`     | `+120/-8`                  |
+| Total session cost | `cost.total_cost_usd`                | `$1.42`                    |
+
+The rate-limit percentages are **remaining** capacity (`100 - used_percentage`),
+rounded to whole numbers. The project segment shows only the **basename** of the
+workspace directory, not the full path.
 
 ### Weekly reset day
 
-The weekly rate-limit segment shows **both** the reset weekday and clock time
-(`resets Sat 01:48`) and the remaining duration (`~55h33m`). The weekday and
-time are derived from the `resets_at` unix timestamp rendered in the machine's
-**local** timezone via `time.localtime`, so it always reflects the current
-system clock.
+The weekly rate-limit segment shows the reset weekday and clock time
+(`Sat 22:22`), derived from the `resets_at` unix timestamp rendered in the
+machine's **local** timezone via `time.localtime`, so it always reflects the
+current system clock. The 5-hour segment instead shows the remaining duration
+(`~2h13m`).
 
 ## Installation
 
