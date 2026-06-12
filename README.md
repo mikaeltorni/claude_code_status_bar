@@ -1,5 +1,7 @@
 # claude_code_status_bar
 
+> Part of [installation_scripts](https://github.com/mikaeltorni/installation_scripts) — the master installer that orchestrates a productivity-focused Ubuntu 24.04 desktop setup (workspaces, hotkeys, window tiling, programming tools, and more).
+
 A custom bottom **status bar** for [Claude Code](https://claude.com/claude-code).
 Claude Code invokes a status-line command with a JSON payload on stdin and
 renders the first line printed to stdout in the bottom bar (next to
