@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # install.sh — Install the Claude Code status bar for the target user.
 #
-# Copies claude-status-bar into ~/.claude/ and wires it into the target's
-# ~/.claude/settings.json as the `statusLine` command. The settings merge is
-# idempotent and preserves every unrelated key, so re-running this installer is
-# always safe.
+# Copies claude-status-bar and its Python modules into ~/.claude/ and wires the
+# executable into the target's ~/.claude/settings.json as the `statusLine`
+# command. The settings merge is idempotent and preserves every unrelated key,
+# so re-running this installer is always safe.
 #
 # Usage:
 #   bash install.sh            # install for the current user
@@ -38,14 +38,18 @@ install_status_bar() {
   local status_script="$claude_dir/claude-status-bar"
   local settings_file="$claude_dir/settings.json"
   local source_script="$SCRIPT_DIR/claude-status-bar"
+  local format_module="$SCRIPT_DIR/status_bar_format.py"
+  local render_module="$SCRIPT_DIR/status_bar_render.py"
 
-  if [[ ! -f "$source_script" ]]; then
-    msg "ERROR: missing source script: $source_script"
+  if [[ ! -f "$source_script" || ! -f "$format_module" || ! -f "$render_module" ]]; then
+    msg "ERROR: missing status bar source files"
     return 1
   fi
 
   run_as_target mkdir -p "$claude_dir"
   run_as_target install -D -m 0755 "$source_script" "$status_script"
+  run_as_target install -D -m 0644 "$format_module" "$claude_dir/status_bar_format.py"
+  run_as_target install -D -m 0644 "$render_module" "$claude_dir/status_bar_render.py"
   msg "Installed status bar script to $status_script"
 
   run_as_target env \

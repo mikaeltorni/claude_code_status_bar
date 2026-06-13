@@ -78,8 +78,23 @@ If you prefer to wire it up by hand, add this to `~/.claude/settings.json`:
 
 ## Development
 
-The status bar is a single, dependency-free Python 3 script. Test it by piping
-a sample status-line payload through it:
+The status bar is dependency-free Python 3 code:
+
+```text
+claude-status-bar       JSON input, diagnostics, and stdout
+status_bar_render.py    Status-segment assembly
+status_bar_format.py    Token and reset-time formatting
+```
+
+The executable imports `build_status_line` from `status_bar_render`, which in
+turn imports the formatting helpers from `status_bar_format`. Run the regression
+tests with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Test the complete command by piping a sample status-line payload through it:
 
 ```bash
 echo '{"model":{"display_name":"Opus"},"rate_limits":{"seven_day":{"used_percentage":40,"resets_at":1700000000}}}' \
