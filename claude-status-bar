@@ -19,6 +19,8 @@ import os
 import sys
 import time
 
+from status_bar_format import format_reset, format_reset_day, format_tokens
+
 
 def _log(message: str) -> None:
     """Append a timestamped diagnostic line to the debug log when enabled.
@@ -45,40 +47,6 @@ def _log(message: str) -> None:
     except OSError:
         # Diagnostics are best-effort; never let logging break the status line.
         pass
-
-
-def _fmt_tokens(n: float) -> str:
-    """Format a token count as a compact string (e.g. 63.2k, 1.0M)."""
-    n = int(n)
-    if n >= 1_000_000:
-        return f"{n / 1_000_000:.1f}M"
-    if n >= 1_000:
-        return f"{n / 1_000:.1f}k"
-    return str(n)
-
-
-def _fmt_reset(ts) -> str:
-    """Format a unix reset timestamp as compact time-remaining (e.g. 2h13m)."""
-    try:
-        remaining = int(ts) - int(time.time())
-    except (TypeError, ValueError):
-        return ""
-    if remaining <= 0:
-        return "now"
-    hours, rem = divmod(remaining, 3600)
-    minutes = rem // 60
-    if hours:
-        return f"{hours}h{minutes:02d}m"
-    return f"{minutes}m"
-
-
-def _fmt_reset_day(ts) -> str:
-    """Format a unix reset timestamp as local weekday + clock time (e.g. Mon 14:30)."""
-    try:
-        reset = int(ts)
-    except (TypeError, ValueError):
-        return ""
-    return time.strftime("%a %H:%M", time.localtime(reset))
 
 
 def main() -> None:
@@ -112,7 +80,7 @@ def main() -> None:
     size = ctx.get("context_window_size")
     pct = ctx.get("used_percentage")
     if used is not None and size:
-        ctx_str = f"{_fmt_tokens(used)}/{_fmt_tokens(size)}"
+        ctx_str = f"{format_tokens(used)}/{format_tokens(size)}"
         if pct is not None:
             ctx_str += f" ({pct}%)"
         parts.append(ctx_str)
@@ -121,11 +89,11 @@ def main() -> None:
     rl = data.get("rate_limits") or {}
     five = rl.get("five_hour") or {}
     if five.get("used_percentage") is not None:
-        reset = _fmt_reset(five.get("resets_at"))
+        reset = format_reset(five.get("resets_at"))
         parts.append(f"5h:{round(100 - five['used_percentage'])}%" + (f" (~{reset})" if reset else ""))
     week = rl.get("seven_day") or {}
     if week.get("used_percentage") is not None:
-        reset_day = _fmt_reset_day(week.get("resets_at"))
+        reset_day = format_reset_day(week.get("resets_at"))
         suffix = f" ({reset_day})" if reset_day else ""
         parts.append(f"wk:{round(100 - week['used_percentage'])}%" + suffix)
 
