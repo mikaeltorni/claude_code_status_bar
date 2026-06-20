@@ -84,11 +84,14 @@ The status bar is dependency-free Python 3 code:
 claude-status-bar       JSON input, diagnostics, and stdout
 status_bar_render.py    Status-segment assembly
 status_bar_format.py    Token and reset-time formatting
+status_bar_logging.py   Centralized, opt-in, file-only logging
+status_bar_install.py   Idempotent settings.json wiring (used by install.sh)
 ```
 
 The executable imports `build_status_line` from `status_bar_render`, which in
-turn imports the formatting helpers from `status_bar_format`. Run the regression
-tests with:
+turn imports the formatting helpers from `status_bar_format`. All modules log
+through the shared `status_bar_logging` utility (see Debugging below). Run the
+regression tests with:
 
 ```bash
 python3 -m unittest discover -s tests -v

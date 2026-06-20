@@ -11,50 +11,35 @@ Bar layout:
 Logging:
     The bar must print exactly one line to stdout, so logging is opt-in and
     routed to a file, never stdout/stderr. Set CLAUDE_STATUS_BAR_DEBUG=1 to
-    record diagnostics (e.g. malformed input) under ``<script-dir>/.log/``.
+    record diagnostics (e.g. malformed input) under ``<script-dir>/.log/`` via
+    the centralized ``status_bar_logging`` utility.
 """
 
 import json
-import os
 import sys
-import time
 
+from status_bar_logging import get_logger
 from status_bar_render import build_status_line
 
+logger = get_logger(__name__)
 
-def _log(message: str) -> None:
-    """Append a timestamped diagnostic line to the debug log when enabled.
 
-    Logging is a no-op unless ``CLAUDE_STATUS_BAR_DEBUG`` is set to a truthy
-    value, keeping the status-line hot path silent and fast by default. When
-    enabled, lines are written to ``<script-dir>/.log/status-bar.log``. Any
-    logging failure is swallowed so diagnostics can never break the bar.
+def main() -> None:
+    """Read the status-line payload from stdin and print the rendered bar.
 
-    Args:
-        message: Human-readable diagnostic text to record.
+    Reads a single JSON object from stdin (as supplied by Claude Code), renders
+    it via :func:`status_bar_render.build_status_line`, and prints exactly one
+    line to stdout. Malformed or empty input is logged (when debugging is
+    enabled) and treated as an empty payload, yielding a blank bar rather than
+    an error.
 
     Returns:
         None.
     """
-    if os.environ.get("CLAUDE_STATUS_BAR_DEBUG", "") in ("", "0", "false", "no"):
-        return
-    try:
-        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".log")
-        os.makedirs(log_dir, exist_ok=True)
-        stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        with open(os.path.join(log_dir, "status-bar.log"), "a", encoding="utf-8") as fh:
-            fh.write(f"{stamp} {message}\n")
-    except OSError:
-        # Diagnostics are best-effort; never let logging break the status line.
-        pass
-
-
-def main() -> None:
-    """Read status-line input from stdin and print the bar text."""
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, EOFError, ValueError) as exc:
-        _log(f"failed to parse status-line JSON from stdin: {exc!r}")
+        logger.warning("failed to parse status-line JSON from stdin: %r", exc)
         data = {}
 
     print(build_status_line(data))

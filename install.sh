@@ -40,9 +40,10 @@ install_status_bar() {
   local source_script="$SCRIPT_DIR/claude-status-bar"
   local format_module="$SCRIPT_DIR/status_bar_format.py"
   local render_module="$SCRIPT_DIR/status_bar_render.py"
+  local logging_module="$SCRIPT_DIR/status_bar_logging.py"
   local install_module="$SCRIPT_DIR/status_bar_install.py"
 
-  if [[ ! -f "$source_script" || ! -f "$format_module" || ! -f "$render_module" || ! -f "$install_module" ]]; then
+  if [[ ! -f "$source_script" || ! -f "$format_module" || ! -f "$render_module" || ! -f "$logging_module" || ! -f "$install_module" ]]; then
     msg "ERROR: missing status bar source files"
     return 1
   fi
@@ -51,6 +52,7 @@ install_status_bar() {
   run_as_target install -D -m 0755 "$source_script" "$status_script"
   run_as_target install -D -m 0644 "$format_module" "$claude_dir/status_bar_format.py"
   run_as_target install -D -m 0644 "$render_module" "$claude_dir/status_bar_render.py"
+  run_as_target install -D -m 0644 "$logging_module" "$claude_dir/status_bar_logging.py"
   msg "Installed status bar script to $status_script"
 
   run_as_target python3 "$install_module" "$settings_file" "$status_script"

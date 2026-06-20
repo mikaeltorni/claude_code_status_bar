@@ -1,18 +1,36 @@
-"""Status-line assembly for the Claude Code status bar."""
+"""status_bar_render.py - status-line assembly for the Claude Code status bar.
+
+Turns the parsed status-line JSON payload Claude Code sends on stdin into the
+single pipe-delimited line shown in the bottom bar. Every segment is optional:
+absent or malformed values are simply omitted so the bar always renders.
+
+Components:
+  - build_status_line: Assemble the full status line from a payload dict.
+"""
+
+from __future__ import annotations
 
 import os
 
 from status_bar_format import format_reset, format_reset_day, format_tokens
+from status_bar_logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def build_status_line(data: dict) -> str:
     """Build the status-bar text from a Claude Code status-line payload.
 
+    Segments, in order: model + reasoning effort, repository name, context-window
+    usage, 5-hour rate limit, weekly rate limit, diff line count, and total cost.
+
     Args:
-        data: Parsed status-line JSON object supplied by Claude Code.
+        data: Parsed status-line JSON object supplied by Claude Code. May be
+            empty or partial; any missing or malformed segment is omitted.
 
     Returns:
-        A pipe-delimited status line. Missing values are omitted.
+        str: A pipe-delimited (`` | ``) status line containing only the segments
+        that could be rendered, or an empty string when nothing is available.
     """
     parts = []
 
@@ -64,4 +82,6 @@ def build_status_line(data: dict) -> str:
     if usd is not None:
         parts.append(f"${usd:.2f}")
 
-    return " | ".join(part for part in parts if part)
+    line = " | ".join(part for part in parts if part)
+    logger.debug("built status line with %d segment(s): %r", len(parts), line)
+    return line
