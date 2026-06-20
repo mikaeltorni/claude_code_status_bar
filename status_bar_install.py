@@ -17,7 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 def _read_settings(settings_file: Path) -> dict[str, Any]:
-    """Read Claude settings JSON, returning an empty object when unavailable."""
+    """Read Claude settings JSON, returning an empty object when unavailable.
+
+    Args:
+        settings_file: Path to the user's ``settings.json``. May be missing,
+            empty, or hold a non-object value.
+
+    Returns:
+        dict[str, Any]: The parsed settings object, or an empty dict when the
+        file is absent, unreadable, or does not contain a JSON object. Read
+        failures are logged at WARNING level rather than raised so the installer
+        can recreate the file from scratch.
+    """
     try:
         settings = json.loads(settings_file.read_text(encoding="utf-8"))
         if isinstance(settings, dict):
@@ -29,7 +40,21 @@ def _read_settings(settings_file: Path) -> dict[str, Any]:
 
 
 def configure_status_line(settings_file: Path, status_script: Path) -> None:
-    """Set Claude Code's statusLine command while preserving unrelated keys."""
+    """Set Claude Code's statusLine command while preserving unrelated keys.
+
+    Reads any existing settings, overwrites only the ``statusLine`` key with a
+    command that runs ``status_script`` via ``python3``, and writes the merged
+    result back (creating parent directories as needed). This is idempotent and
+    non-destructive: re-running it leaves every other setting untouched.
+
+    Args:
+        settings_file: Path to the user's ``settings.json`` to update in place.
+        status_script: Path to the installed ``claude-status-bar`` executable to
+            wire in as the status-line command.
+
+    Returns:
+        None.
+    """
     settings = _read_settings(settings_file)
     settings["statusLine"] = {
         "type": "command",
@@ -41,7 +66,17 @@ def configure_status_line(settings_file: Path, status_script: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint used by the shell installer."""
+    """CLI entrypoint used by the shell installer.
+
+    Args:
+        argv: Optional argument list (excluding the program name). When ``None``,
+            ``sys.argv[1:]`` is used. Exactly two arguments are expected: the
+            settings file path and the installed status-bar script path.
+
+    Returns:
+        int: Process exit code -- ``0`` on success, or ``2`` when the wrong
+        number of arguments is supplied (usage error printed to stderr).
+    """
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = list(sys.argv[1:] if argv is None else argv)
     if len(args) != 2:
