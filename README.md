@@ -8,6 +8,17 @@ renders the first line printed to stdout in the bottom bar (next to
 "bypass permissions on"). This repository provides that command, plus an
 idempotent installer that wires it into `~/.claude/settings.json`.
 
+## Repository dependencies
+
+This repository installs and runs **standalone** — it has **no** dependency on
+any other setup repository. It is *consumed by*
+`linux_programming_setup`, which wires this status-line command into Claude
+Code; that is a one-way relationship and does not create a dependency in this
+direction.
+
+See the full cross-repository map in
+[installation_scripts/DEPENDENCIES.md](https://github.com/mikaeltorni/installation_scripts/blob/master/DEPENDENCIES.md).
+
 ## Bar layout
 
 ```
