@@ -40,8 +40,9 @@ install_status_bar() {
   local source_script="$SCRIPT_DIR/claude-status-bar"
   local format_module="$SCRIPT_DIR/status_bar_format.py"
   local render_module="$SCRIPT_DIR/status_bar_render.py"
+  local install_module="$SCRIPT_DIR/status_bar_install.py"
 
-  if [[ ! -f "$source_script" || ! -f "$format_module" || ! -f "$render_module" ]]; then
+  if [[ ! -f "$source_script" || ! -f "$format_module" || ! -f "$render_module" || ! -f "$install_module" ]]; then
     msg "ERROR: missing status bar source files"
     return 1
   fi
@@ -52,29 +53,7 @@ install_status_bar() {
   run_as_target install -D -m 0644 "$render_module" "$claude_dir/status_bar_render.py"
   msg "Installed status bar script to $status_script"
 
-  run_as_target env \
-    CLAUDE_SETTINGS_FILE="$settings_file" \
-    CLAUDE_STATUS_SCRIPT="$status_script" \
-    python3 - <<'PY'
-import json
-import os
-from pathlib import Path
-
-settings_file = Path(os.environ["CLAUDE_SETTINGS_FILE"])
-status_cmd = f"python3 {os.environ['CLAUDE_STATUS_SCRIPT']}"
-
-try:
-    settings = json.loads(settings_file.read_text())
-    if not isinstance(settings, dict):
-        settings = {}
-except Exception:
-    settings = {}
-
-settings["statusLine"] = {"type": "command", "command": status_cmd}
-
-settings_file.parent.mkdir(parents=True, exist_ok=True)
-settings_file.write_text(json.dumps(settings, indent=2) + "\n")
-PY
+  run_as_target python3 "$install_module" "$settings_file" "$status_script"
   msg "Wired statusLine into $settings_file"
 }
 
