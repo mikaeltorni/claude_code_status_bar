@@ -100,12 +100,12 @@ status_bar_install.py   Idempotent settings.json wiring (used by install.sh)
 ```
 
 The executable imports `build_status_line` from `status_bar_render`, which in
-turn imports the formatting helpers from `status_bar_format`. All modules log
-through the shared `status_bar_logging` utility (see Debugging below). Run the
-regression tests with:
+turn imports the formatting helpers from `status_bar_format`. Runtime modules
+log through the shared `status_bar_logging` utility (see Debugging below). Run
+the full regression suite with:
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m pytest -q
 ```
 
 Test the complete command by piping a sample status-line payload through it:
