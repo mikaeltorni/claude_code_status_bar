@@ -14,24 +14,31 @@ Components:
 from __future__ import annotations
 
 import time
+from typing import SupportsFloat
 
 from status_bar_logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def format_tokens(n: float) -> str:
+def format_tokens(n: SupportsFloat) -> str:
     """Format a token count as a compact human-readable string.
 
     Args:
-        n: Token count to format. Floats are truncated toward zero before
-            formatting (e.g. ``999.9`` -> ``"999"``).
+        n: Token count to format. Any value accepted by ``int()`` is supported;
+            floats are truncated toward zero before formatting (e.g. ``999.9``
+            -> ``"999"``).
 
     Returns:
         str: ``"<x.x>M"`` for millions, ``"<x.x>k"`` for thousands, otherwise
-        the plain integer as a string (e.g. ``63_249`` -> ``"63.2k"``).
+        the plain integer as a string (e.g. ``63_249`` -> ``"63.2k"``), or
+        ``""`` on invalid input.
     """
-    n = int(n)
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        logger.debug("format_tokens received invalid token count: %r", n)
+        return ""
     if n >= 1_000_000:
         return f"{n / 1_000_000:.1f}M"
     if n >= 1_000:

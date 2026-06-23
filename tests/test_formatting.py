@@ -18,6 +18,9 @@ class FormatTokensTests(unittest.TestCase):
     def test_truncates_fractional_tokens_before_formatting(self):
         self.assertEqual(status_bar_format.format_tokens(999.9), "999")
 
+    def test_rejects_invalid_token_count(self):
+        self.assertEqual(status_bar_format.format_tokens("not-a-number"), "")
+
 
 class FormatResetTests(unittest.TestCase):
     """Verify relative reset-time formatting."""
