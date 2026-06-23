@@ -30,6 +30,7 @@ def _fresh_module(monkeypatch, *, debug: str | None):
 def test_debug_enabled_reflects_environment(monkeypatch):
     assert _fresh_module(monkeypatch, debug=None).debug_enabled() is False
     assert _fresh_module(monkeypatch, debug="0").debug_enabled() is False
+    assert _fresh_module(monkeypatch, debug="FALSE").debug_enabled() is False
     assert _fresh_module(monkeypatch, debug="1").debug_enabled() is True
 
 
@@ -58,3 +59,47 @@ def test_enabled_logging_writes_to_repo_log_dir(monkeypatch, tmp_path):
     log_file = tmp_path / ".log" / "status-bar.log"
     assert log_file.exists()
     assert "hello log" in log_file.read_text(encoding="utf-8")
+
+
+def test_reconfiguration_does_not_duplicate_handlers(monkeypatch, tmp_path):
+    monkeypatch.setenv("CLAUDE_STATUS_BAR_DEBUG", "1")
+    mod = importlib.reload(status_bar_logging)
+    monkeypatch.setattr(mod, "_log_dir", lambda: str(tmp_path / ".log"))
+
+    mod._reset_for_tests()
+    first = mod.get_logger("first")
+    handler_count = len(logging.getLogger("status_bar").handlers)
+
+    mod = importlib.reload(status_bar_logging)
+    monkeypatch.setattr(mod, "_log_dir", lambda: str(tmp_path / ".log"))
+    second = mod.get_logger("second")
+
+    assert first.name == "status_bar.first"
+    assert second.name == "status_bar.second"
+    assert len(logging.getLogger("status_bar").handlers) == handler_count
+
+
+def test_log_call_records_arguments_and_return_value(monkeypatch, tmp_path):
+    monkeypatch.setenv("CLAUDE_STATUS_BAR_DEBUG", "1")
+    mod = importlib.reload(status_bar_logging)
+    monkeypatch.setattr(mod, "_log_dir", lambda: str(tmp_path / ".log"))
+    mod._reset_for_tests()
+    logger = mod.get_logger("decorated")
+
+    @mod.log_call(logger)
+    def combine(prefix: str, count: int = 1) -> str:
+        return f"{prefix}:{count}"
+
+    assert combine("tokens", count=3) == "tokens:3"
+
+    log_text = (tmp_path / ".log" / "status-bar.log").read_text(encoding="utf-8")
+    assert (
+        "ENTER test_logging.py:"
+        "test_log_call_records_arguments_and_return_value.<locals>.combine"
+        "(prefix='tokens', count=3)"
+    ) in log_text
+    assert (
+        "EXIT test_logging.py:"
+        "test_log_call_records_arguments_and_return_value.<locals>.combine"
+        " -> 'tokens:3'"
+    ) in log_text

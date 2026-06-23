@@ -10,6 +10,7 @@ fast by default.
 Components:
   - debug_enabled: Report whether file logging is currently enabled.
   - get_logger: Return a namespaced logger wired to the shared file handler.
+  - log_call: Decorate selected functions with standard argument/return tracing.
 
 Usage example:
     from status_bar_logging import get_logger
@@ -20,8 +21,12 @@ Usage example:
 
 from __future__ import annotations
 
+import functools
+import inspect
 import logging
 import os
+from pathlib import Path
+from typing import Any, Callable, TypeVar
 
 # Environment values that disable logging (anything else enables it).
 _DISABLED_VALUES = ("", "0", "false", "no")
@@ -33,6 +38,7 @@ _LOG_FILE_NAME = "status-bar.log"
 
 # Guards the one-time handler configuration performed by ``_configure``.
 _configured = False
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def debug_enabled() -> bool:
@@ -42,7 +48,7 @@ def debug_enabled() -> bool:
         bool: ``True`` when ``CLAUDE_STATUS_BAR_DEBUG`` is set to a truthy
         value, otherwise ``False``.
     """
-    return os.environ.get("CLAUDE_STATUS_BAR_DEBUG", "") not in _DISABLED_VALUES
+    return os.environ.get("CLAUDE_STATUS_BAR_DEBUG", "").lower() not in _DISABLED_VALUES
 
 
 def _log_dir() -> str:
@@ -76,6 +82,7 @@ def _configure() -> None:
 
     root = logging.getLogger(_ROOT_LOGGER_NAME)
     root.propagate = False  # Never bubble to the stderr "last resort" handler.
+    root.handlers.clear()
 
     if not debug_enabled():
         root.addHandler(logging.NullHandler())
@@ -129,3 +136,40 @@ def get_logger(name: str) -> logging.Logger:
     """
     _configure()
     return logging.getLogger(f"{_ROOT_LOGGER_NAME}.{name}")
+
+
+def log_call(logger: logging.Logger, level: int = logging.DEBUG) -> Callable[[F], F]:
+    """Trace a function call by logging bound arguments on entry and return.
+
+    Each record includes ``file:qualname`` for the wrapped function so status-bar
+    diagnostics are searchable without scattering hardcoded context strings
+    through feature modules. The decorator logs nothing beyond the entry
+    arguments and exit value.
+
+    Args:
+        logger: Centralized logger returned by :func:`get_logger`.
+        level: Logging level for the entry and exit records.
+
+    Returns:
+        Callable[[F], F]: A decorator for the target function.
+    """
+
+    def decorator(func: F) -> F:
+        location = f"{Path(func.__code__.co_filename).name}:{func.__qualname__}"
+        signature = inspect.signature(func)
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            bound = signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            rendered = ", ".join(
+                f"{name}={value!r}" for name, value in bound.arguments.items()
+            )
+            logger.log(level, "ENTER %s(%s)", location, rendered)
+            result = func(*args, **kwargs)
+            logger.log(level, "EXIT %s -> %r", location, result)
+            return result
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
