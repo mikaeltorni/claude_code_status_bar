@@ -35,6 +35,17 @@ def test_configure_status_line_preserves_unrelated_settings(tmp_path):
     }
 
 
+def test_configure_status_line_quotes_paths_with_spaces(tmp_path):
+    mod = load_module()
+    settings_file = tmp_path / "Claude Config" / "settings.json"
+    status_script = tmp_path / "Claude Config" / "claude-status-bar"
+
+    mod.configure_status_line(settings_file, status_script)
+
+    settings = json.loads(settings_file.read_text(encoding="utf-8"))
+    assert settings["statusLine"]["command"] == f"python3 '{status_script}'"
+
+
 def test_install_shell_delegates_settings_write_to_python_module():
     installer = (ROOT / "install.sh").read_text(encoding="utf-8")
 
