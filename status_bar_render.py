@@ -13,11 +13,23 @@ from __future__ import annotations
 import os
 
 from status_bar_format import format_reset, format_reset_day, format_tokens
-from status_bar_logging import get_logger
+from status_bar_logging import get_logger, log_call
 
 logger = get_logger(__name__)
 
 
+def _number(value: object, field: str) -> float | None:
+    """Coerce a status payload number, logging malformed fields at debug level."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        logger.debug("omitting malformed numeric field %s: %r", field, value)
+        return None
+
+
+@log_call(logger)
 def build_status_line(data: dict) -> str:
     """Build the status-bar text from a Claude Code status-line payload.
 
@@ -51,34 +63,36 @@ def build_status_line(data: dict) -> str:
 
     # Context-window usage in numbers.
     ctx = data.get("context_window") or {}
-    used = ctx.get("total_input_tokens")
-    size = ctx.get("context_window_size")
-    pct = ctx.get("used_percentage")
+    used = _number(ctx.get("total_input_tokens"), "context_window.total_input_tokens")
+    size = _number(ctx.get("context_window_size"), "context_window.context_window_size")
+    pct = _number(ctx.get("used_percentage"), "context_window.used_percentage")
     if used is not None and size:
         ctx_str = f"{format_tokens(used)}/{format_tokens(size)}"
         if pct is not None:
-            ctx_str += f" ({pct}%)"
+            ctx_str += f" ({pct:g}%)"
         parts.append(ctx_str)
 
     # Rate limits — 5-hour and weekly windows, shown as remaining (100 - used).
     rl = data.get("rate_limits") or {}
     five = rl.get("five_hour") or {}
-    if five.get("used_percentage") is not None:
+    five_used = _number(five.get("used_percentage"), "rate_limits.five_hour.used_percentage")
+    if five_used is not None:
         reset = format_reset(five.get("resets_at"))
-        parts.append(f"5h:{round(100 - five['used_percentage'])}%" + (f" (~{reset})" if reset else ""))
+        parts.append(f"5h:{round(100 - five_used)}%" + (f" (~{reset})" if reset else ""))
     week = rl.get("seven_day") or {}
-    if week.get("used_percentage") is not None:
+    week_used = _number(week.get("used_percentage"), "rate_limits.seven_day.used_percentage")
+    if week_used is not None:
         reset_day = format_reset_day(week.get("resets_at"))
         suffix = f" ({reset_day})" if reset_day else ""
-        parts.append(f"wk:{round(100 - week['used_percentage'])}%" + suffix)
+        parts.append(f"wk:{round(100 - week_used)}%" + suffix)
 
     # Diff count and total cost.
     cost = data.get("cost") or {}
-    added = cost.get("total_lines_added")
-    removed = cost.get("total_lines_removed")
+    added = _number(cost.get("total_lines_added"), "cost.total_lines_added")
+    removed = _number(cost.get("total_lines_removed"), "cost.total_lines_removed")
     if added is not None or removed is not None:
-        parts.append(f"+{added or 0}/-{removed or 0}")
-    usd = cost.get("total_cost_usd")
+        parts.append(f"+{int(added or 0)}/-{int(removed or 0)}")
+    usd = _number(cost.get("total_cost_usd"), "cost.total_cost_usd")
     if usd is not None:
         parts.append(f"${usd:.2f}")
 

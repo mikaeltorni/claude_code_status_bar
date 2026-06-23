@@ -75,6 +75,31 @@ class StatusBarCommandTests(unittest.TestCase):
                 self.assertEqual(result.stderr, "")
                 self.assertEqual(result.stdout, "\n")
 
+    def test_omits_malformed_numeric_segments(self):
+        payload = {
+            "model": {"display_name": "Opus"},
+            "context_window": {
+                "total_input_tokens": "bad",
+                "context_window_size": 200_000,
+                "used_percentage": "bad",
+            },
+            "rate_limits": {
+                "five_hour": {"used_percentage": "bad"},
+                "seven_day": {"used_percentage": "bad"},
+            },
+            "cost": {
+                "total_lines_added": "bad",
+                "total_lines_removed": "also-bad",
+                "total_cost_usd": "bad",
+            },
+        }
+
+        result = run_status_bar(json.dumps(payload))
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(result.stdout, "Opus\n")
+
 
 if __name__ == "__main__":
     unittest.main()
