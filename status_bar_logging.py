@@ -1,11 +1,12 @@
 """status_bar_logging.py - centralized logging for the Claude Code status bar.
 
 The status bar must print exactly one line to stdout, so every diagnostic is
-routed to a file and is opt-in: nothing is logged unless the environment
-variable ``CLAUDE_STATUS_BAR_DEBUG`` is set to a truthy value. When enabled,
-log records are written to ``<module-dir>/.log/status-bar.log`` with timestamps
-and never touch stdout or stderr, keeping the status-line hot path silent and
-fast by default.
+routed to a file and never touches stdout or stderr. Logging is **on by
+default**: records are written to ``<module-dir>/.log/status-bar.log`` with
+timestamps on every run. Setting ``CLAUDE_STATUS_BAR_DEBUG`` to a falsy value
+(``0``, ``false``, ``no``, or the empty string) opts out, replacing the file
+handler with a silent null handler for the rare case where on-disk diagnostics
+are unwanted.
 
 Components:
   - debug_enabled: Report whether file logging is currently enabled.
@@ -28,7 +29,8 @@ import os
 from pathlib import Path
 from typing import Any, Callable, TypeVar
 
-# Environment values that disable logging (anything else enables it).
+# Environment values that disable logging (anything else, including unset,
+# enables it). Logging defaults to on per the always-on diagnostics policy.
 _DISABLED_VALUES = ("", "0", "false", "no")
 
 # Shared logger namespace and on-disk artifacts.
@@ -42,13 +44,16 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def debug_enabled() -> bool:
-    """Report whether opt-in file logging is currently enabled.
+    """Report whether file logging is currently enabled.
+
+    Logging is on by default; it is disabled only when
+    ``CLAUDE_STATUS_BAR_DEBUG`` is explicitly set to a falsy value.
 
     Returns:
-        bool: ``True`` when ``CLAUDE_STATUS_BAR_DEBUG`` is set to a truthy
-        value, otherwise ``False``.
+        bool: ``True`` unless ``CLAUDE_STATUS_BAR_DEBUG`` is set to ``0``,
+        ``false``, ``no``, or the empty string.
     """
-    return os.environ.get("CLAUDE_STATUS_BAR_DEBUG", "").lower() not in _DISABLED_VALUES
+    return os.environ.get("CLAUDE_STATUS_BAR_DEBUG", "1").lower() not in _DISABLED_VALUES
 
 
 def _log_dir() -> str:
@@ -65,9 +70,10 @@ def _log_dir() -> str:
 def _configure() -> None:
     """Configure the shared ``status_bar`` logger exactly once.
 
-    When logging is disabled (the default), a :class:`logging.NullHandler` is
-    attached and the level is raised above all records so logging calls become
-    cheap no-ops. When enabled, a single :class:`logging.FileHandler` writing to
+    When logging is disabled (opt-out via ``CLAUDE_STATUS_BAR_DEBUG``), a
+    :class:`logging.NullHandler` is attached and the level is raised above all
+    records so logging calls become cheap no-ops. When enabled (the default), a
+    single :class:`logging.FileHandler` writing to
     ``<module-dir>/.log/status-bar.log`` is attached. Any filesystem failure is
     swallowed and downgraded to the silent null handler so diagnostics can never
     break the status line.

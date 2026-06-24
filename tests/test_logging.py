@@ -14,7 +14,7 @@ def _fresh_module(monkeypatch, *, debug: str | None):
     Args:
         monkeypatch: Pytest fixture used to set or clear the debug env var.
         debug: Value to assign to ``CLAUDE_STATUS_BAR_DEBUG``; ``None`` clears
-            it so the default (disabled) behavior is exercised.
+            it so the default (enabled) behavior is exercised.
 
     Returns:
         The freshly reloaded ``status_bar_logging`` module, ensuring its
@@ -28,25 +28,42 @@ def _fresh_module(monkeypatch, *, debug: str | None):
 
 
 def test_debug_enabled_reflects_environment(monkeypatch):
-    assert _fresh_module(monkeypatch, debug=None).debug_enabled() is False
+    # Logging is on by default (unset) and only an explicit falsy value opts out.
+    assert _fresh_module(monkeypatch, debug=None).debug_enabled() is True
     assert _fresh_module(monkeypatch, debug="0").debug_enabled() is False
     assert _fresh_module(monkeypatch, debug="FALSE").debug_enabled() is False
+    assert _fresh_module(monkeypatch, debug="").debug_enabled() is False
     assert _fresh_module(monkeypatch, debug="1").debug_enabled() is True
 
 
 def test_get_logger_namespaces_under_status_bar(monkeypatch):
-    mod = _fresh_module(monkeypatch, debug=None)
+    mod = _fresh_module(monkeypatch, debug="0")
     logger = mod.get_logger("status_bar_render")
     assert isinstance(logger, logging.Logger)
     assert logger.name == "status_bar.status_bar_render"
 
 
 def test_disabled_logging_is_silent(monkeypatch, capsys):
-    mod = _fresh_module(monkeypatch, debug=None)
+    mod = _fresh_module(monkeypatch, debug="0")
     mod.get_logger("noisy").error("this must never reach stderr")
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+def test_default_logging_never_reaches_stdout_or_stderr(monkeypatch, capsys, tmp_path):
+    # Even with logging on by default, records go to the file, never the streams.
+    monkeypatch.delenv("CLAUDE_STATUS_BAR_DEBUG", raising=False)
+    mod = importlib.reload(status_bar_logging)
+    monkeypatch.setattr(mod, "_log_dir", lambda: str(tmp_path / ".log"))
+    mod._reset_for_tests()
+    mod.get_logger("noisy").error("file only, please")
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+    assert "file only, please" in (tmp_path / ".log" / "status-bar.log").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_enabled_logging_writes_to_repo_log_dir(monkeypatch, tmp_path):
