@@ -1,6 +1,10 @@
 # Runtime log artifacts — see CLAUDE_STATUS_BAR_DEBUG in claude-status-bar.
 .log/
 
+# Installed segment-selection config — written by install.sh into ~/.claude.
+# The in-repo source tree ships no config so the renderer shows every segment.
+claude-status-bar.conf
+
 # Python bytecode caches.
 __pycache__/
 *.pyc

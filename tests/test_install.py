@@ -47,7 +47,15 @@ def test_configure_status_line_quotes_paths_with_spaces(tmp_path):
 
 
 def test_install_shell_delegates_settings_write_to_python_module():
-    installer = (ROOT / "install.sh").read_text(encoding="utf-8")
-
-    assert "status_bar_install.py" in installer
-    assert "python3 - <<'PY'" not in installer
+    # The settings write lives in the install-step library, invoked via the
+    # python module rather than an inline heredoc. Assert across every installer
+    # shell file so the delegation can't regress into a script.
+    shell_files = [
+        ROOT / "install.sh",
+        ROOT / "scripts" / "install_standalone.sh",
+        ROOT / "lib" / "status_bar_install_lib.sh",
+    ]
+    combined = "\n".join(f.read_text(encoding="utf-8") for f in shell_files)
+    assert "status_bar_install.py" in combined
+    assert "python3 - <<'PY'" not in combined
+    assert "<<'PY'" not in combined
