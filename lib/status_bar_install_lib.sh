@@ -27,6 +27,24 @@ _sb_config_path()  { printf '%s/.claude/claude-status-bar.conf' "$TARGET_HOME"; 
 # ~/.claude) was not selected. Only the config *path* lives under ~/.claude.
 _sb_config_module(){ printf '%s/status_bar_config.py' "$REPO_DIR"; }
 
+# status_bar_configure_codex_tui - preserve config.toml while setting Codex's
+# supported native status-line fields. No external renderer is required.
+status_bar_configure_codex_tui() {
+  local config="$TARGET_HOME/.codex/config.toml"
+  run_as_target python3 "$REPO_DIR/agent_tui_install.py" "$config"
+  msg "Configured Codex native TUI status bar"
+}
+
+# status_bar_configure_cline_tui - document and verify Cline's built-in rich
+# terminal display; current Cline exposes no external status-line settings API.
+status_bar_configure_cline_tui() {
+  if ! run_as_target bash -lc 'command -v cline >/dev/null'; then
+    msg "Cline CLI is not installed; its native rich TUI will be available after CLI installation"
+    return 0
+  fi
+  msg "Cline rich TUI is provided natively by the installed Cline CLI"
+}
+
 # status_bar_install_core - Install the core executable, modules, and wiring.
 #
 # Copies claude-status-bar plus every Python module into ~/.claude, wires the

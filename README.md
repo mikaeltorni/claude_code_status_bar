@@ -2,7 +2,12 @@
 
 > Part of [installation_scripts](https://github.com/mikaeltorni/installation_scripts) — the master installer that orchestrates a productivity-focused Ubuntu 24.04 desktop setup (workspaces, hotkeys, window tiling, programming tools, and more). Tested on Ubuntu 24.04.4 LTS.
 
-A custom bottom **status bar** for [Claude Code](https://claude.com/claude-code).
+A shared agent-display repository for Claude Code's custom bottom **status bar**,
+Codex's native rich TUI status line, and Cline's native rich terminal display.
+
+The master installer exposes this as its own repository immediately after the
+Codex, Claude Code, and Cline CLI installer. Its submenu owns all display setup:
+`codex_tui`, `cline_tui`, and Claude's `core` plus selectable status segments.
 Claude Code invokes a status-line command with a JSON payload on stdin and
 renders the first line printed to stdout in the bottom bar (next to
 "bypass permissions on"). This repository provides that command, plus an

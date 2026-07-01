@@ -54,7 +54,7 @@ def test_list_components_is_side_effect_free(tmp_path):
     result = run_install(tmp_path, "--list-components")
     assert result.returncode == 0, result.stderr
     ids = [line.split("\t")[0] for line in result.stdout.splitlines() if "\t" in line]
-    assert ids == ["core", "model", "project", "context", "five_hour", "weekly", "diff", "cost"]
+    assert ids == ["codex_tui", "cline_tui", "core", "model", "project", "context", "five_hour", "weekly", "diff", "cost"]
     # Listing must not create the installed directory.
     assert not (tmp_path / ".claude").exists()
 

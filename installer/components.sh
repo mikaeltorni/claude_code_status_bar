@@ -15,6 +15,8 @@ ISC_REPO_NAME="claude_code_status_bar"
 ISC_REPO_LABEL="Claude Code status bar"
 
 ISC_COMPONENTS=(
+  "codex_tui|Codex rich native TUI status bar|on|status_bar_configure_codex_tui"
+  "cline_tui|Cline rich native TUI display|on|status_bar_configure_cline_tui"
   "core|Status bar script, modules, and settings.json wiring|on|status_bar_install_core"
   "model|Model name + reasoning effort segment|on|status_bar_enable_model"
   "project|Repository / workspace name segment|on|status_bar_enable_project"
