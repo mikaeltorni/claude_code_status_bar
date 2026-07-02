@@ -2,34 +2,41 @@
 
 ## Status bar: apply edits to the installed copy too
 
-The source of truth is `claude-status-bar` (and its `status_bar_*.py` modules)
-in this repo, but Claude Code runs the **installed copy** under `~/.claude/`.
-Editing only the repo files will not change what shows in the status bar.
+The source of truth is `claude-status-bar` (and its `status_bar_*.py` modules) in this repo, but Claude Code runs the **installed copy** under `~/.claude/`. Editing only the repo files will not change what shows in the status bar.
 
-After editing the script or any module, sync the installed copy by running the
-installer from the repo root:
+After editing the script or any module, sync the installed copy:
 
 ```bash
-bash install.sh --default
+bash install.sh --select claude_tui
 ```
 
-This copies the script and modules to `~/.claude/`, (idempotently) wires the
-`statusLine` into `~/.claude/settings.json`, and regenerates
-`~/.claude/claude-status-bar.conf`. The bar re-renders on the next prompt.
+## Five-agent TUI ownership
+
+This repository owns display setup for all five agents in menu order: Codex (`ca`), Qwen (`qa`), Claude Code (`cca`), Grok (`ga`), and Cline (`cla`). Each agent is one top-level component with a `configure_fn` nested field screen and a `config_status_fn` preview snippet.
+
+- **Codex + Qwen** share `agent_tui_catalog.py` / `agent_tui_install.py` for `[tui] status_line` TOML upserts. Codex writes both `~/.codex` and `~/.codex-api`.
+- **Claude Code** uses `status_bar_render.py` and `claude-status-bar`; segment ids live in `status_bar_config.SEGMENT_IDS`.
+- **Grok + Cline** are verify/document-only: no unsupported `config.toml` keys are invented.
+
+Keep these in sync when adding fields:
+
+1. Catalog/labels in `agent_tui_catalog.py` or `agent_field_selection.py`
+2. Preview fixtures in `status_bar_preview.py`
+3. Manifest row in `installer/components.sh`
+4. Install/detect function in `lib/status_bar_install_lib.sh`
+5. README field tables
 
 ## Component-based installer
 
-This repo uses the shared `linux_installation_scripts_functions` component
-framework. Each bar segment is a selectable component; the `core` component is
-the always-on base (script + modules + `settings.json` wiring + config reset).
+```text
+install.sh                     thin delegator
+scripts/install_standalone.sh  framework bootstrap + preview menu wrap
+lib/status_bar_install_lib.sh  per-component install/configure/detect
+installer/components.sh        ISC_COMPONENTS manifest
+```
 
-- `install.sh` — thin delegator to `scripts/install_standalone.sh`.
-- `scripts/install_standalone.sh` — resolves the framework, loads helpers,
-  sources the install steps, and calls `component_main "$@"`.
-- `lib/status_bar_install_lib.sh` — the per-component install functions.
-- `installer/components.sh` — the `ISC_COMPONENTS` manifest (`id|label|default|fn`).
+`--list-components` and `--list-configurable-components` must stay side-effect free.
 
-To add or rename a segment, keep three places in sync: `SEGMENT_IDS` in
-`status_bar_config.py`, the `_SEGMENTS` registry in `status_bar_render.py`, and
-the manifest in `installer/components.sh` (plus its wrapper in the install lib).
-Keep `--list-components` side-effect free — the master installer parses it.
+## Preview behavior
+
+`status_bar_preview.py` builds fixture-based preview strings. The main component menu appends a preview line under the checklist via `status_bar_wrap_component_menu_preview()`. Nested configurators (`agent_field_configurator.py`) render the same preview at the bottom while fields are toggled.

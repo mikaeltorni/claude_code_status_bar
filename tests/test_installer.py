@@ -54,12 +54,11 @@ def test_list_components_is_side_effect_free(tmp_path):
     result = run_install(tmp_path, "--list-components")
     assert result.returncode == 0, result.stderr
     ids = [line.split("\t")[0] for line in result.stdout.splitlines() if "\t" in line]
-    assert ids == ["codex_tui", "cline_tui", "core", "model", "project", "context", "five_hour", "weekly", "diff", "cost"]
-    # Listing must not create the installed directory.
+    assert ids == ["codex_tui", "qwen_tui", "claude_tui", "grok_tui", "cline_tui"]
     assert not (tmp_path / ".claude").exists()
 
 
-def test_default_install_installs_core_and_all_segments(tmp_path):
+def test_default_install_installs_claude_core_and_all_segments(tmp_path):
     result = run_install(tmp_path, "--default")
     assert result.returncode == 0, result.stderr
     claude = tmp_path / ".claude"
@@ -80,8 +79,14 @@ def test_default_install_installs_core_and_all_segments(tmp_path):
     ]
 
 
-def test_select_installs_only_chosen_segments(tmp_path):
-    result = run_install(tmp_path, "--select", "core,model,cost")
+def test_select_installs_only_chosen_claude_segments(tmp_path):
+    selection = tmp_path / ".config/claude_code_status_bar/field-selections.json"
+    selection.parent.mkdir(parents=True)
+    selection.write_text(
+        json.dumps({"claude": ["model", "cost"]}) + "\n",
+        encoding="utf-8",
+    )
+    result = run_install(tmp_path, "--select", "claude_tui")
     assert result.returncode == 0, result.stderr
     assert (tmp_path / ".claude" / "claude-status-bar").exists()
     assert read_segments(tmp_path) == ["model", "cost"]
@@ -102,13 +107,18 @@ def test_reinstall_is_idempotent_and_preserves_unrelated_settings(tmp_path):
 
     assert after_first == after_second
     settings = json.loads(after_second)
-    assert settings["theme"] == "dark"  # unrelated key preserved
+    assert settings["theme"] == "dark"
     assert "statusLine" in settings
 
 
 def test_reselect_replaces_previous_segment_choice(tmp_path):
     run_install(tmp_path, "--default")
     assert len(read_segments(tmp_path)) == 7
-    # Re-running with a narrower selection regenerates the config cleanly.
-    run_install(tmp_path, "--select", "core,context")
+    selection = tmp_path / ".config/claude_code_status_bar/field-selections.json"
+    selection.parent.mkdir(parents=True, exist_ok=True)
+    selection.write_text(
+        json.dumps({"claude": ["context"]}) + "\n",
+        encoding="utf-8",
+    )
+    run_install(tmp_path, "--select", "claude_tui")
     assert read_segments(tmp_path) == ["context"]

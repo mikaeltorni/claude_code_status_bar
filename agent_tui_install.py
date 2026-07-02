@@ -1,29 +1,49 @@
 #!/usr/bin/env python3
-"""Preserving installer for native Codex TUI status-line configuration."""
+"""Preserving installer for native Codex-style TUI status-line configuration."""
 
-from pathlib import Path
+from __future__ import annotations
+
+import json
 import sys
+from pathlib import Path
+
+from agent_tui_catalog import read_status_line_tokens, write_status_line_tokens
 
 
-def configure_codex(path: Path) -> None:
-    """Set the supported rich status fields without replacing other TOML keys."""
-    lines = path.read_text().splitlines(keepends=True) if path.exists() else []
-    status = 'status_line = ["model-with-reasoning","current-dir","git-branch","context-remaining","five-hour-limit","weekly-limit"]\n'
-    start = next((i for i, line in enumerate(lines) if line.strip() == "[tui]"), None)
-    if start is None:
-        text = "".join(lines).rstrip() + ("\n\n" if lines else "") + "[tui]\n" + status
-    else:
-        end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("[")), len(lines))
-        item = next((i for i in range(start + 1, end) if lines[i].split("#", 1)[0].partition("=")[0].strip() == "status_line"), None)
-        if item is None:
-            lines.insert(start + 1, status)
+def configure_codex(path: Path, tokens: list[str] | None = None) -> None:
+    """Set supported rich status fields without replacing other TOML keys."""
+    if tokens is None:
+        from agent_tui_catalog import CODEX_DEFAULT_FIELDS
+
+        tokens = list(CODEX_DEFAULT_FIELDS)
+    write_status_line_tokens(path, tokens)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if len(args) < 2:
+        print(
+            "Usage: agent_tui_install.py {write|read} CONFIG_PATH [JSON tokens]",
+            file=sys.stderr,
+        )
+        return 2
+    command, config_path = args[0], Path(args[1])
+    if command == "write":
+        if len(args) > 2:
+            tokens = json.loads(args[2]) if args[2].startswith("[") else args[2:]
         else:
-            lines[item] = status
-        text = "".join(lines)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
-    path.chmod(0o600)
+            from agent_tui_catalog import CODEX_DEFAULT_FIELDS
+
+            tokens = list(CODEX_DEFAULT_FIELDS)
+        configure_codex(config_path, list(tokens))
+        return 0
+    if command == "read":
+        tokens = read_status_line_tokens(config_path)
+        print(json.dumps(tokens if tokens is not None else []))
+        return 0
+    print(f"Unknown command: {command}", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
-    configure_codex(Path(sys.argv[1]))
+    raise SystemExit(main())

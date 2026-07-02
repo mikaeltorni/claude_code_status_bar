@@ -1,5 +1,14 @@
 {
   "components": {
+    "claude_tui": {
+      "config_value": "",
+      "favorite": 0,
+      "on": 1,
+      "startup": 0,
+      "sticky": 0,
+      "uninstall": 0,
+      "workspace": 0
+    },
     "cline_tui": {
       "config_value": "",
       "favorite": 0,
@@ -18,7 +27,7 @@
       "uninstall": 0,
       "workspace": 0
     },
-    "context": {
+    "grok_tui": {
       "config_value": "",
       "favorite": 0,
       "on": 1,
@@ -27,61 +36,7 @@
       "uninstall": 0,
       "workspace": 0
     },
-    "core": {
-      "config_value": "",
-      "favorite": 0,
-      "on": 1,
-      "startup": 0,
-      "sticky": 0,
-      "uninstall": 0,
-      "workspace": 0
-    },
-    "cost": {
-      "config_value": "",
-      "favorite": 0,
-      "on": 1,
-      "startup": 0,
-      "sticky": 0,
-      "uninstall": 0,
-      "workspace": 0
-    },
-    "diff": {
-      "config_value": "",
-      "favorite": 0,
-      "on": 1,
-      "startup": 0,
-      "sticky": 0,
-      "uninstall": 0,
-      "workspace": 0
-    },
-    "five_hour": {
-      "config_value": "",
-      "favorite": 0,
-      "on": 1,
-      "startup": 0,
-      "sticky": 0,
-      "uninstall": 0,
-      "workspace": 0
-    },
-    "model": {
-      "config_value": "",
-      "favorite": 0,
-      "on": 1,
-      "startup": 0,
-      "sticky": 0,
-      "uninstall": 0,
-      "workspace": 0
-    },
-    "project": {
-      "config_value": "",
-      "favorite": 0,
-      "on": 1,
-      "startup": 0,
-      "sticky": 0,
-      "uninstall": 0,
-      "workspace": 0
-    },
-    "weekly": {
+    "qwen_tui": {
       "config_value": "",
       "favorite": 0,
       "on": 1,

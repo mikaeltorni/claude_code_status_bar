@@ -2,194 +2,160 @@
 
 > Part of [installation_scripts](https://github.com/mikaeltorni/installation_scripts) — the master installer that orchestrates a productivity-focused Ubuntu 24.04 desktop setup (workspaces, hotkeys, window tiling, programming tools, and more). Tested on Ubuntu 24.04.4 LTS.
 
-A shared agent-display repository for Claude Code's custom bottom **status bar**,
-Codex's native rich TUI status line, and Cline's native rich terminal display.
+A shared **agent TUI display** repository for all five coding-agent CLIs used in this setup chain. Despite the repository name, it owns status-bar and rich-TUI configuration for **Codex**, **Qwen (local Codex)**, **Claude Code**, **Grok**, and **Cline** — not Claude Code alone.
 
-The master installer exposes this as its own repository immediately after the
-Codex, Claude Code, and Cline CLI installer. Its submenu owns all display setup:
-`codex_tui`, `cline_tui`, and Claude's `core` plus selectable status segments.
-Claude Code invokes a status-line command with a JSON payload on stdin and
-renders the first line printed to stdout in the bottom bar (next to
-"bypass permissions on"). This repository provides that command, plus an
-idempotent, **component-based** installer that wires it into
-`~/.claude/settings.json` and lets you pick exactly which segments appear.
+The master installer runs this repository immediately after the CLI installer. Its component menu lists the five agents in this order:
 
-## Repository dependencies
+1. **Codex** (`codex_tui`) — `ca`
+2. **Qwen (local Codex)** (`qwen_tui`) — `qa`
+3. **Claude Code** (`claude_tui`) — `cca`
+4. **Grok** (`grok_tui`) — `ga`
+5. **Cline** (`cline_tui`) — `cla`
 
-This repository installs and runs **standalone** — it has **no** dependency on
-any other setup repository. It is *consumed by*
-`linux_programming_setup`, which wires this status-line command into Claude
-Code; that is a one-way relationship and does not create a dependency in this
-direction.
+Press **RIGHT** on any row to open a nested field checklist. A **simulated status-bar preview** appears at the bottom of that screen and on the main component menu while a row is highlighted.
 
-See the full cross-repository map in
-[installation_scripts/DEPENDENCIES.md](https://github.com/mikaeltorni/installation_scripts/blob/master/DEPENDENCIES.md).
+## Launcher and config-path mapping
 
-## Bar layout
+| Agent | ACC / launcher | Status/TUI config written by this repo |
+| ----- | -------------- | ---------------------------------------- |
+| Codex | `ca` | `~/.codex/config.toml` **and** `~/.codex-api/config.toml` (`[tui] status_line`) |
+| Qwen (local Codex) | `qa` | `~/.codex-qwen/config.toml` (`[tui] status_line`) |
+| Claude Code | `cca` | `~/.claude/claude-status-bar.conf` + `statusLine` in `~/.claude/settings.json` |
+| Grok | `ga` | Native rich TUI only — **no** writable `status_line` key in `~/.grok/config.toml` |
+| Cline | `cla` | Native rich TUI only — **no** external status-line settings API |
+
+Field selections are staged in `~/.config/claude_code_status_bar/field-selections.json` and applied on install/reconfigure.
+
+Codex and Qwen share one Codex-style token catalog and TOML writer (`agent_tui_catalog.py`). Claude Code keeps its custom `claude-status-bar` renderer.
+
+## Codex / Qwen field tokens
+
+These map to `[tui] status_line` in Codex-style `config.toml` files (documented in the [Codex config reference](https://developers.openai.com/codex/config-reference)):
+
+| Token | Label |
+| ----- | ----- |
+| `model-with-reasoning` | Model + reasoning effort |
+| `current-dir` | Current directory |
+| `git-branch` | Git branch |
+| `context-remaining` | Context remaining |
+| `five-hour-limit` | 5-hour rate limit |
+| `weekly-limit` | Weekly rate limit |
+| `run-state` | Run state |
+| `context-used` | Context used |
+| `codex-version` | Codex version |
+| `pull-request-number` | Pull request number |
+| `branch-changes` | Branch changes |
+| `used-tokens` | Used tokens |
+| `total-input-tokens` | Total input tokens |
+| `total-output-tokens` | Total output tokens |
+
+**Default Codex selection:** all six original tokens (`model-with-reasoning` through `weekly-limit`).
+
+**Default Qwen selection:** `model-with-reasoning`, `current-dir`, `context-remaining`.
+
+## Claude Code segments
+
+Claude Code invokes a status-line command with a JSON payload on stdin and renders the first stdout line in the bottom bar. This repository provides that command plus segment selection.
 
 ```
 Opus · low | claude_code_status_bar | 63.2k/200.0k (31%) | 5h:90% (~2h13m) | wk:60% (Sat 22:22) | +120/-8 | $1.42
 ```
 
-| Segment            | Component id | Source field                         | Example                    |
-| ------------------ | ------------ | ------------------------------------ | -------------------------- |
-| Model + effort     | `model`      | `model.display_name`, `effort.level` | `Opus · low`               |
-| Repository name    | `project`    | `workspace.project_dir` / `cwd`      | `claude_code_status_bar`   |
-| Context window     | `context`    | `context_window.*`                   | `63.2k/200.0k (31%)`       |
-| 5-hour rate limit  | `five_hour`  | `rate_limits.five_hour`              | `5h:90% (~2h13m)`          |
-| Weekly rate limit  | `weekly`     | `rate_limits.seven_day`              | `wk:60% (Sat 22:22)`       |
-| Diff line count    | `diff`       | `cost.total_lines_added/removed`     | `+120/-8`                  |
-| Total session cost | `cost`       | `cost.total_cost_usd`                | `$1.42`                    |
+| Segment | Component id | Source field | Example |
+| ------- | ------------ | ------------ | ------- |
+| Model + effort | `model` | `model.display_name`, `effort.level` | `Opus · low` |
+| Repository name | `project` | `workspace.project_dir` / `cwd` | `claude_code_status_bar` |
+| Context window | `context` | `context_window.*` | `63.2k/200.0k (31%)` |
+| 5-hour rate limit | `five_hour` | `rate_limits.five_hour` | `5h:90% (~2h13m)` |
+| Weekly rate limit | `weekly` | `rate_limits.seven_day` | `wk:60% (Sat 22:22)` |
+| Diff line count | `diff` | `cost.total_lines_added/removed` | `+120/-8` |
+| Total session cost | `cost` | `cost.total_cost_usd` | `$1.42` |
 
-Each segment is an independently selectable installer **component** (the
-`core` component installs the script, modules, and `settings.json` wiring and is
-always on). See [Installation](#installation) for how to choose them.
+All seven segments are default-on.
 
-The rate-limit percentages are **remaining** capacity (`100 - used_percentage`),
-rounded to whole numbers. The project segment shows only the **basename** of the
-workspace directory, not the full path.
+## Grok and Cline (native display)
 
-### Weekly reset day
+Grok and Cline ship rich native terminal displays. This installer **verifies** the CLI is present and documents the native elements in the nested checklist (preview-only toggles — nothing is written to unsupported upstream keys):
 
-The weekly rate-limit segment shows the reset weekday and clock time
-(`Sat 22:22`), derived from the `resets_at` unix timestamp rendered in the
-machine's **local** timezone via `time.localtime`, so it always reflects the
-current system clock. The 5-hour segment instead shows the remaining duration
-(`~2h13m`).
+**Grok reference fields:** model, working-directory, session-state, context-usage, tool-activity.
+
+**Cline reference fields:** model, workspace, context-window, session-cost, diff-stats.
 
 ## Installation
 
-The installer copies `claude-status-bar` and its Python modules into
-`~/.claude/`, sets the `statusLine` key in `~/.claude/settings.json`, and writes
-your segment selection to `~/.claude/claude-status-bar.conf`. It is
-**idempotent** and preserves every unrelated setting.
-
-It uses the shared
-[`linux_installation_scripts_functions`](https://github.com/mikaeltorni/linux_installation_scripts_functions)
-component framework, so it exposes the same selection contract as the rest of
-the setup family:
-
 ```bash
-# Interactive component menu on a terminal; default-on components otherwise
+# Interactive component menu with live previews
 bash install.sh
 
-# Install the core plus every default-on segment, no prompts
+# Install every default-on agent display
 bash install.sh --default
 
 # Install every component
 bash install.sh --all
 
-# Install exactly these components (core is required for a working bar)
-bash install.sh --select core,model,context,cost
+# Install or reconfigure specific agents
+bash install.sh --select codex_tui,claude_tui
 
-# List components as: id<TAB>label<TAB>default
+# Open one nested field screen non-interactively (TTY required for toggles)
+bash install.sh --configure-component codex_tui
+
+# List components (id<TAB>label<TAB>default[<TAB>section])
 bash install.sh --list-components
 
-# Install for another user (used by the clean-install chain under sudo)
+# List nested configurators
+bash install.sh --list-configurable-components
+
+# Install for another user (clean-install chain under sudo)
 sudo bash install.sh --default
 ```
 
-Every segment is **default-on**, so a default install reproduces the full bar
-shown above. The `core` component (script + modules + `settings.json` wiring) is
-always on — the bar mechanism works no matter which segments you pick.
+| Variable | Default | Purpose |
+| -------- | ------- | ------- |
+| `TARGET_USER` | `$SUDO_USER` or `$USER` | User whose agent homes are configured |
+| `TARGET_HOME` | target user's home | Override for clean-home tests |
 
-### Customizing which segments appear
+After editing the Claude renderer, sync the installed copy:
 
-Segment selection is decided at **install time**: re-run the installer with a
-different `--select` to change the bar. The installer regenerates
-`~/.claude/claude-status-bar.conf` (one enabled segment id per line) on every
-run. If that config file is absent — e.g. a manual install that only copies the
-script — the renderer shows **every** segment, so nothing is lost.
-
-Environment overrides:
-
-| Variable      | Default                   | Purpose                          |
-| ------------- | ------------------------- | -------------------------------- |
-| `TARGET_USER` | `$SUDO_USER` or `$USER`   | User whose `~/.claude` is set up |
-
-## How it fits the setup chain
-
-This repository is cloned and configured automatically as part of the
-`linux_programming_setup` installer, which runs
-`claude_code_status_bar/install.sh` after the editor setup. See that
-repository's `install.sh` for the integration point.
-
-## Manual configuration
-
-If you prefer to wire it up by hand, add this to `~/.claude/settings.json`:
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "python3 /home/<you>/.claude/claude-status-bar"
-  }
-}
+```bash
+bash install.sh --select claude_tui
 ```
 
-## Development
+## Repository dependencies
 
-The status bar is dependency-free Python 3 code:
+This repository installs and runs **standalone**. It is consumed by `linux_programming_setup` in the master chain; that is a one-way relationship.
+
+See [installation_scripts/DEPENDENCIES.md](https://github.com/mikaeltorni/installation_scripts/blob/master/DEPENDENCIES.md).
+
+## Development layout
 
 ```text
-claude-status-bar       JSON input, diagnostics, and stdout
-status_bar_render.py    Per-segment registry + status-line assembly
-status_bar_format.py    Token and reset-time formatting
-status_bar_config.py    Segment selection (reads/writes claude-status-bar.conf)
-status_bar_logging.py   Centralized, file-only logging (on by default)
-status_bar_install.py   Idempotent settings.json wiring (used by install.sh)
+claude-status-bar              Claude JSON stdin → stdout command
+status_bar_render.py           Per-segment registry + assembly
+status_bar_format.py           Token and reset-time formatting
+status_bar_config.py           Claude segment selection
+status_bar_preview.py          Simulated previews for all five agents
+agent_tui_catalog.py           Shared Codex/Qwen token catalog + TOML writer
+agent_field_selection.py       Per-agent field-selection persistence
+agent_field_configurator.py    Nested checklist TUI with live preview
+agent_tui_install.py           Codex/Qwen TOML install helper
+status_bar_segment_install.py  Claude segment config writer
+installer/components.sh        Five-agent component manifest
+lib/status_bar_install_lib.sh  Install/configure/detect functions
 ```
 
-The installer shell lives in `install.sh` (a thin delegator),
-`scripts/install_standalone.sh` (framework bootstrap), `lib/` (install steps),
-and `installer/components.sh` (the component manifest).
-
-The executable imports `build_status_line` from `status_bar_render`, which in
-turn imports the formatting helpers from `status_bar_format`. Runtime modules
-log through the shared `status_bar_logging` utility (see Debugging below). Run
-the full regression suite with:
+Run tests:
 
 ```bash
 python3 -m pytest -q
 ```
 
-Test the complete command by piping a sample status-line payload through it:
+Pipe a sample Claude payload:
 
 ```bash
-echo '{"model":{"display_name":"Opus"},"rate_limits":{"seven_day":{"used_percentage":40,"resets_at":1700000000}}}' \
+echo '{"model":{"display_name":"Opus"},"workspace":{"project_dir":"/work/claude_code_status_bar"}}' \
   | python3 claude-status-bar
 ```
-
-### Debugging
-
-The bar must emit exactly one stdout line, so diagnostics never touch stdout or
-stderr — they are routed to a file. File logging is **on by default**, recording
-events (such as malformed input) under `<script-dir>/.log/status-bar.log`:
-
-```bash
-echo 'not json' | python3 claude-status-bar
-cat .log/status-bar.log
-```
-
-Set `CLAUDE_STATUS_BAR_DEBUG` to a falsy value (`0`, `false`, `no`, or empty) to
-opt out and silence file logging:
-
-```bash
-echo 'not json' | CLAUDE_STATUS_BAR_DEBUG=0 python3 claude-status-bar
-```
-
-The `.log/` directory is git-ignored — log files are runtime artifacts.
 
 ## License
 
 See [LICENSE.md](LICENSE.md).
-
-## Disclaimer
-
-This software is provided under the MIT License on an **“as is”** basis, without warranties of any kind. To the maximum extent permitted by applicable law, the authors and copyright holders shall not be liable for any claims, damages, losses, or other liability arising from the use of this software.
-
-You are solely responsible for determining whether this software is suitable, safe, lawful, and appropriate for your intended use. Unless explicitly stated otherwise, this project is general-purpose software and is not designed, tested, certified, or approved for safety-critical, medical, automotive, aviation, industrial-control, life-support, cybersecurity-critical, financial-critical, or other high-risk use cases.
-
-The authors and copyright holders make no guarantees regarding security, reliability, availability, correctness, compliance, non-infringement, or fitness for any particular purpose.
-
-This notice is intended to clarify the nature of the project and does not impose additional restrictions beyond the MIT License.

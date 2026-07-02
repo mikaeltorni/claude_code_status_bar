@@ -51,16 +51,17 @@ source "$REPO_DIR/lib/status_bar_install_lib.sh"
 
 isc_activate_components
 source "$REPO_DIR/installer/components.sh"
+status_bar_wrap_component_menu_preview
 
 # main - run the selected status-bar installer components.
 main() {
-  msg "Installing Claude Code status bar for $TARGET_USER"
+  msg "Installing agent TUI status bars for $TARGET_USER"
   component_main "$@"
   msg "Status bar setup complete."
 }
 
 case "${1:-}" in
-  --list-components|--help|-h) component_main "$@"; exit $? ;;
+  --list-components|--list-configurable-components|--list-component-config-values|--configure-component|--configure-component=*|--detect|--help|-h) component_main "$@"; exit $? ;;
 esac
 
 main "$@"

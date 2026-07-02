@@ -1,28 +1,16 @@
 #!/usr/bin/env bash
-# components.sh - Component manifest for claude_code_status_bar.
+# components.sh - Five-agent TUI status-bar manifest for claude_code_status_bar.
 #
-# Entry format: "id|label|default(on/off)|function". The functions are defined
-# in lib/status_bar_install_lib.sh, sourced by scripts/install_standalone.sh.
-#
-# "core" is the always-on base component: it installs the executable, the Python
-# modules, the settings.json wiring, and resets the segment-selection config. It
-# is listed first so the per-segment components append into a clean file. Every
-# segment is default-on, so a default (or non-interactive) install reproduces the
-# full bar exactly as before component selection existed. Deselecting a segment
-# simply omits it from the installed bar.
+# Entry: id|label|default|install_fn[|detect|uninstall|section|requires|configure_fn|config_status_fn]
+# Order: Codex, Qwen (local Codex), Claude Code, Grok, Cline.
 
 ISC_REPO_NAME="claude_code_status_bar"
-ISC_REPO_LABEL="Claude Code status bar"
+ISC_REPO_LABEL="Agent TUI status bars"
 
 ISC_COMPONENTS=(
-  "codex_tui|Codex rich native TUI status bar|on|status_bar_configure_codex_tui"
-  "cline_tui|Cline rich native TUI display|on|status_bar_configure_cline_tui"
-  "core|Status bar script, modules, and settings.json wiring|on|status_bar_install_core"
-  "model|Model name + reasoning effort segment|on|status_bar_enable_model"
-  "project|Repository / workspace name segment|on|status_bar_enable_project"
-  "context|Context-window usage segment|on|status_bar_enable_context"
-  "five_hour|5-hour rate-limit segment|on|status_bar_enable_five_hour"
-  "weekly|Weekly rate-limit segment|on|status_bar_enable_weekly"
-  "diff|Diff line-count segment|on|status_bar_enable_diff"
-  "cost|Total session cost segment|on|status_bar_enable_cost"
+  "codex_tui|Codex TUI status bar|on|status_bar_install_codex|detect_codex_tui||Codex||status_bar_configure_codex_fields|status_bar_codex_preview_status"
+  "qwen_tui|Qwen (local Codex) TUI status bar|on|status_bar_install_qwen|detect_qwen_tui||Qwen||status_bar_configure_qwen_fields|status_bar_qwen_preview_status"
+  "claude_tui|Claude Code status bar|on|status_bar_install_claude|detect_claude_tui||Claude Code||status_bar_configure_claude_fields|status_bar_claude_preview_status"
+  "grok_tui|Grok TUI display|on|status_bar_install_grok|detect_grok_tui||Grok||status_bar_configure_grok_fields|status_bar_grok_preview_status"
+  "cline_tui|Cline TUI display|on|status_bar_install_cline|detect_cline_tui||Cline||status_bar_configure_cline_fields|status_bar_cline_preview_status"
 )

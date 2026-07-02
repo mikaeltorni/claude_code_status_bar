@@ -1,57 +1,83 @@
 #!/usr/bin/env bash
-# status_bar_install_lib.sh - install-step functions for the status bar.
-#
-# Sourced by scripts/install_standalone.sh, which provides the shared installer
-# helpers (run_as_target, msg) and the resolved REPO_DIR / TARGET_HOME. Each
-# function here installs one selectable component declared in
-# installer/components.sh:
-#
-#   * status_bar_install_core enables the always-on "core" component: it copies
-#     the executable and Python modules into ~/.claude, wires the statusLine
-#     command into settings.json, and resets the segment-selection config to a
-#     clean (empty) state. It is listed first in the manifest so the per-segment
-#     components below append into a known-clean file.
-#   * status_bar_enable_<segment> appends its segment id to the installed config
-#     so the renderer shows it. They are idempotent and create the config if the
-#     core component was not selected.
-#
-# The installed config lists exactly the selected segments. The renderer treats
-# an absent config as "show everything", so manual installs are unaffected.
+# status_bar_install_lib.sh - install-step functions for the five-agent status bar.
 
-# Absolute path of the installed ~/.claude directory and its artifacts. These
-# read TARGET_HOME, exported by the standalone bootstrap.
 _sb_claude_dir()   { printf '%s/.claude' "$TARGET_HOME"; }
 _sb_config_path()  { printf '%s/.claude/claude-status-bar.conf' "$TARGET_HOME"; }
-# Run the config CLI from the repo copy, which is always present, so segment
-# components work even when the core component (which installs the module into
-# ~/.claude) was not selected. Only the config *path* lives under ~/.claude.
 _sb_config_module(){ printf '%s/status_bar_config.py' "$REPO_DIR"; }
+_sb_selection_path() {
+  python3 "$REPO_DIR/agent_field_selection.py" path "$TARGET_HOME"
+}
 
-# status_bar_configure_codex_tui - preserve config.toml while setting Codex's
-# supported native status-line fields. No external renderer is required.
-status_bar_configure_codex_tui() {
+# status_bar_configure_*_fields - nested configurators (configure_fn).
+status_bar_configure_codex_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" codex "$TARGET_HOME"
+}
+status_bar_configure_qwen_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" qwen "$TARGET_HOME"
+}
+status_bar_configure_claude_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" claude "$TARGET_HOME"
+}
+status_bar_configure_grok_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" grok "$TARGET_HOME"
+}
+status_bar_configure_cline_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" cline "$TARGET_HOME"
+}
+
+# config_status_fn previews for the main component menu.
+status_bar_codex_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component codex_tui "$TARGET_HOME" 2>/dev/null || true
+}
+status_bar_qwen_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component qwen_tui "$TARGET_HOME" 2>/dev/null || true
+}
+status_bar_claude_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component claude_tui "$TARGET_HOME" 2>/dev/null || true
+}
+status_bar_grok_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component grok_tui "$TARGET_HOME" 2>/dev/null || true
+}
+status_bar_cline_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component cline_tui "$TARGET_HOME" 2>/dev/null || true
+}
+
+_sb_write_codex_tokens() {
+  local config="$1" agent="${2:-codex}"
+  local tokens
+  tokens="$(python3 "$REPO_DIR/agent_field_selection.py" get "$agent" "$(_sb_selection_path)")"
+  run_as_target python3 "$REPO_DIR/agent_tui_install.py" write "$config" "$tokens"
+}
+
+status_bar_install_codex() {
+  local config
+  for config in "$TARGET_HOME/.codex/config.toml" "$TARGET_HOME/.codex-api/config.toml"; do
+    _sb_write_codex_tokens "$config" codex
+  done
+  msg "Configured Codex native TUI status bar (~/.codex and ~/.codex-api for ca)"
+}
+
+detect_codex_tui() {
   local config="$TARGET_HOME/.codex/config.toml"
-  run_as_target python3 "$REPO_DIR/agent_tui_install.py" "$config"
-  msg "Configured Codex native TUI status bar"
+  [[ -f "$config" ]] && grep -q 'status_line' "$config"
 }
 
-# status_bar_configure_cline_tui - document and verify Cline's built-in rich
-# terminal display; current Cline exposes no external status-line settings API.
-status_bar_configure_cline_tui() {
-  if ! run_as_target bash -lc 'command -v cline >/dev/null'; then
-    msg "Cline CLI is not installed; its native rich TUI will be available after CLI installation"
-    return 0
-  fi
-  msg "Cline rich TUI is provided natively by the installed Cline CLI"
+status_bar_install_qwen() {
+  _sb_write_codex_tokens "$TARGET_HOME/.codex-qwen/config.toml" qwen
+  msg "Configured Qwen (local Codex) native TUI status bar (~/.codex-qwen for qa)"
 }
 
-# status_bar_install_core - Install the core executable, modules, and wiring.
-#
-# Copies claude-status-bar plus every Python module into ~/.claude, wires the
-# statusLine command into settings.json (idempotent, preserving unrelated keys),
-# and (re)initializes the segment config to empty. Returns non-zero only when a
-# required source file is missing.
-status_bar_install_core() {
+detect_qwen_tui() {
+  local config="$TARGET_HOME/.codex-qwen/config.toml"
+  [[ -f "$config" ]] && grep -q 'status_line' "$config"
+}
+
+status_bar_install_claude_core() {
   local claude_dir status_script settings_file source_script
   claude_dir="$(_sb_claude_dir)"
   status_script="$claude_dir/claude-status-bar"
@@ -85,30 +111,61 @@ status_bar_install_core() {
   msg "Installed status bar script and modules to $claude_dir"
 
   run_as_target python3 "$claude_dir/status_bar_install.py" "$settings_file" "$status_script"
-  msg "Wired statusLine into $settings_file"
-
-  # Reset the segment selection to empty; segment components append themselves.
-  run_as_target python3 "$(_sb_config_module)" init "$(_sb_config_path)"
-  msg "Initialized segment selection at $(_sb_config_path)"
+  msg "Wired statusLine into $settings_file (cca)"
 }
 
-# _sb_enable_segment ID - Append segment ID to the installed config.
-#
-# Shared implementation behind the per-segment component functions. Idempotent
-# and self-healing: if the core component was deselected and no config exists,
-# status_bar_config.py creates it before appending.
-_sb_enable_segment() {
-  local segment="$1"
-  run_as_target python3 "$(_sb_config_module)" enable "$segment" "$(_sb_config_path)"
-  msg "Enabled '$segment' status-bar segment"
+status_bar_install_claude() {
+  local segments config_path
+  status_bar_install_claude_core || return $?
+  segments="$(python3 "$REPO_DIR/agent_field_selection.py" get claude "$(_sb_selection_path)")"
+  config_path="$(_sb_config_path)"
+  run_as_target python3 "$(_sb_config_module)" init "$config_path"
+  run_as_target python3 "$REPO_DIR/status_bar_segment_install.py" "$config_path" "$segments"
+  msg "Enabled Claude Code status-bar segments at $config_path"
 }
 
-# Per-segment component entry points referenced by installer/components.sh. Each
-# is a thin wrapper so the manifest maps an id to a named, greppable function.
-status_bar_enable_model()     { _sb_enable_segment model; }
-status_bar_enable_project()   { _sb_enable_segment project; }
-status_bar_enable_context()   { _sb_enable_segment context; }
-status_bar_enable_five_hour() { _sb_enable_segment five_hour; }
-status_bar_enable_weekly()    { _sb_enable_segment weekly; }
-status_bar_enable_diff()      { _sb_enable_segment diff; }
-status_bar_enable_cost()      { _sb_enable_segment cost; }
+detect_claude_tui() {
+  [[ -x "$(_sb_claude_dir)/claude-status-bar" ]] \
+    && [[ -f "$(_sb_config_path)" ]]
+}
+
+status_bar_install_grok() {
+  if ! run_as_target bash -lc 'command -v grok >/dev/null'; then
+    msg "Grok CLI is not installed; native rich TUI will be available after CLI installation (ga)"
+    return 0
+  fi
+  msg "Grok rich TUI is provided natively by the installed Grok CLI (~/.grok for ga)"
+}
+
+detect_grok_tui() {
+  run_as_target bash -lc 'command -v grok >/dev/null'
+}
+
+status_bar_install_cline() {
+  if ! run_as_target bash -lc 'command -v cline >/dev/null'; then
+    msg "Cline CLI is not installed; native rich TUI will be available after CLI installation (cla)"
+    return 0
+  fi
+  msg "Cline rich TUI is provided natively by the installed Cline CLI (cla)"
+}
+
+detect_cline_tui() {
+  run_as_target bash -lc 'command -v cline >/dev/null'
+}
+
+# Append a simulated preview under the shared component submenu.
+status_bar_wrap_component_menu_preview() {
+  declare -F cm_render_submenu >/dev/null 2>&1 || return 0
+  eval "$(declare -f cm_render_submenu | sed '1s/^cm_render_submenu/_cm_render_submenu_orig/')"
+  cm_render_submenu() {
+    _cm_render_submenu_orig "$@"
+    local repo="$1" sel="$2"
+    local -a ids=()
+    local id preview
+    cm_comp_ids_for_repo "$repo" ids
+    id="${ids[$sel]:-}"
+    [[ -n "$id" ]] || return 0
+    preview="$(python3 "$REPO_DIR/status_bar_preview.py" component "$id" "$TARGET_HOME" 2>/dev/null || true)"
+    [[ -n "$preview" ]] && printf '  \033[2mPreview: %s\033[0m\n' "$preview"
+  }
+}
