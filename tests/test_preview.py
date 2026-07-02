@@ -24,10 +24,13 @@ def test_qwen_preview_uses_local_fixture():
     assert "agent_command_center" in line
 
 
-def test_aggregate_preview_lists_all_five_agents():
-    line = preview_all_agents()
+def test_aggregate_preview_lists_all_five_agents_on_separate_lines():
+    text = preview_all_agents()
+    lines = [line for line in text.splitlines() if line.strip()]
+    assert len(lines) == 5
     for label in ("Codex", "Qwen", "Claude", "Grok", "Cline"):
-        assert f"[{label}]" in line
+        assert any(f"[{label}]" in line for line in lines)
+    assert all(line.startswith("[") for line in lines)
 
 
 def test_claude_preview_honors_segment_selection():

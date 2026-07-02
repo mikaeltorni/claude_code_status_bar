@@ -125,13 +125,13 @@ AGGREGATE_AGENT_LABELS: tuple[tuple[str, str], ...] = (
 
 
 def preview_all_agents(target_home: Path | None = None) -> str:
-    """Return a single-line summary of all five agent previews (menu order)."""
+    """Return a multi-line summary of all five agent previews (menu order)."""
     parts: list[str] = []
     for agent, label in AGGREGATE_AGENT_LABELS:
         line = preview_for_agent(agent, target_home=target_home)
         if line:
             parts.append(f"[{label}] {line}")
-    return " | ".join(parts)
+    return "\n".join(parts)
 
 
 def main(argv: list[str] | None = None) -> int:

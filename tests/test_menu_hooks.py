@@ -82,8 +82,14 @@ def test_aggregate_preview_is_above_help_line():
     result = _run_render(body)
     assert result.returncode == 0, result.stderr
     lines = _nonempty_lines(result.stdout)
-    assert len(lines) >= 2
+    assert len(lines) >= 3
     assert "[enter] apply" in lines[-1] or "configure" in lines[-1]
-    assert "Preview:" in lines[-2]
-    assert "[Codex]" in lines[-2]
-    assert "[Qwen]" in lines[-2]
+    assert any("Preview:" in line for line in lines)
+    preview_block = [
+        line for line in lines
+        if "Preview:" in line or "[Codex]" in line or "[Qwen]" in line
+        or "[Claude]" in line or "[Grok]" in line or "[Cline]" in line
+    ]
+    assert len(preview_block) >= 5
+    assert result.stdout.count("[Codex]") == 1
+    assert result.stdout.count("[Qwen]") == 1

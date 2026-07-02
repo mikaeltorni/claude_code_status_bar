@@ -66,15 +66,21 @@ status_bar_render_aggregate_with_preview() {
     return 0
   fi
   help_line="$(printf '%s' "$out" | awk 'NF { line = $0 } END { print line }')"
-  printf '%s' "$out" | awk -v help="$help_line" -v preview="$preview" '
+  printf '%s' "$out" | awk -v help="$help_line" '
     NF && $0 != help { print }
-    END {
-      if (help != "") {
-        printf "  \033[2mPreview: %s\033[0m\n", preview
-        print help
-      }
-    }
+    END { if (help != "") print "" }
   '
+  local first=1 line
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    if [[ "$first" == "1" ]]; then
+      printf '  \033[2mPreview: %s\033[0m\n' "$line"
+      first=0
+    else
+      printf '  \033[2m%s\033[0m\n' "$line"
+    fi
+  done <<< "$preview"
+  printf '%s\n' "$help_line"
 }
 
 # status_bar_register_menu_preview_hooks - monkey-patch shared menu renderers once.
