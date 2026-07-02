@@ -20,12 +20,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _last_nonempty_line(output: str) -> str:
-    last = ""
-    for line in output.splitlines():
-        if line.strip():
-            last = line
-    return last
+def _nonempty_lines(output: str) -> list[str]:
+    return [line for line in output.splitlines() if line.strip()]
 
 
 def _run_render(script_body: str) -> subprocess.CompletedProcess[str]:
@@ -49,7 +45,7 @@ def _run_render(script_body: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_submenu_preview_is_last_line():
+def test_submenu_preview_is_above_footer_help():
     body = textwrap.dedent(
         """
         CM_REPOS+=(claude_code_status_bar)
@@ -66,12 +62,14 @@ def test_submenu_preview_is_last_line():
     )
     result = _run_render(body)
     assert result.returncode == 0, result.stderr
-    last = _last_nonempty_line(result.stdout)
-    assert "Preview:" in last
-    assert "gpt-5.5" in last or "ornstein" in last.lower()
+    lines = _nonempty_lines(result.stdout)
+    assert len(lines) >= 2
+    assert "footer help" in lines[-1]
+    assert "Preview:" in lines[-2]
+    assert "gpt-5.5" in lines[-2] or "ornstein" in lines[-2].lower()
 
 
-def test_aggregate_preview_is_last_line():
+def test_aggregate_preview_is_above_help_line():
     body = textwrap.dedent(
         """
         CM_REPOS=(other_repo claude_code_status_bar)
@@ -83,7 +81,9 @@ def test_aggregate_preview_is_last_line():
     )
     result = _run_render(body)
     assert result.returncode == 0, result.stderr
-    last = _last_nonempty_line(result.stdout)
-    assert "Preview:" in last
-    assert "[Codex]" in last
-    assert "[Qwen]" in last
+    lines = _nonempty_lines(result.stdout)
+    assert len(lines) >= 2
+    assert "[enter] apply" in lines[-1] or "configure" in lines[-1]
+    assert "Preview:" in lines[-2]
+    assert "[Codex]" in lines[-2]
+    assert "[Qwen]" in lines[-2]
