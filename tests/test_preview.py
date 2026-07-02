@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from status_bar_preview import preview_for_agent
+from status_bar_preview import preview_all_agents, preview_for_agent
 
 
 def test_codex_preview_is_non_empty_and_changes_when_field_removed():
@@ -22,6 +22,12 @@ def test_qwen_preview_uses_local_fixture():
     line = preview_for_agent("qwen", ["model-with-reasoning", "current-dir", "context-remaining"])
     assert "ornstein" in line
     assert "agent_command_center" in line
+
+
+def test_aggregate_preview_lists_all_five_agents():
+    line = preview_all_agents()
+    for label in ("Codex", "Qwen", "Claude", "Grok", "Cline"):
+        assert f"[{label}]" in line
 
 
 def test_claude_preview_honors_segment_selection():

@@ -115,6 +115,25 @@ def preview_for_component(component_id: str, target_home: Path | None = None) ->
     return preview_for_agent(agent, target_home=target_home)
 
 
+AGGREGATE_AGENT_LABELS: tuple[tuple[str, str], ...] = (
+    ("codex", "Codex"),
+    ("qwen", "Qwen"),
+    ("claude", "Claude"),
+    ("grok", "Grok"),
+    ("cline", "Cline"),
+)
+
+
+def preview_all_agents(target_home: Path | None = None) -> str:
+    """Return a single-line summary of all five agent previews (menu order)."""
+    parts: list[str] = []
+    for agent, label in AGGREGATE_AGENT_LABELS:
+        line = preview_for_agent(agent, target_home=target_home)
+        if line:
+            parts.append(f"[{label}] {line}")
+    return " | ".join(parts)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
@@ -125,6 +144,10 @@ def main(argv: list[str] | None = None) -> int:
         component = args[1] if len(args) > 1 else ""
         home = Path(args[2]) if len(args) > 2 else None
         print(preview_for_component(component, home))
+        return 0
+    if command == "aggregate":
+        home = Path(args[1]) if len(args) > 1 else None
+        print(preview_all_agents(home))
         return 0
     home = Path(args[2]) if len(args) > 2 and str(args[2]).startswith(("/", ".")) else None
     if len(args) > 1 and args[1].startswith("["):

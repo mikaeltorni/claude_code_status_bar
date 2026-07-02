@@ -165,19 +165,10 @@ detect_cline_tui() {
   run_as_target bash -lc 'command -v cline >/dev/null'
 }
 
-# Append a simulated preview under the shared component submenu.
+# Register shared menu preview hooks (submenu + aggregate).
 status_bar_wrap_component_menu_preview() {
-  declare -F cm_render_submenu >/dev/null 2>&1 || return 0
-  eval "$(declare -f cm_render_submenu | sed '1s/^cm_render_submenu/_cm_render_submenu_orig/')"
-  cm_render_submenu() {
-    _cm_render_submenu_orig "$@"
-    local repo="$1" sel="$2"
-    local -a ids=()
-    local id preview
-    cm_comp_ids_for_repo "$repo" ids
-    id="${ids[$sel]:-}"
-    [[ -n "$id" ]] || return 0
-    preview="$(python3 "$REPO_DIR/status_bar_preview.py" component "$id" "$TARGET_HOME" 2>/dev/null || true)"
-    [[ -n "$preview" ]] && printf '  \033[2mPreview: %s\033[0m\n' "$preview"
-  }
+  # shellcheck source=lib/status_bar_menu_hooks.sh
+  source "$REPO_DIR/lib/status_bar_menu_hooks.sh"
+  STATUS_BAR_REPO_DIR="$REPO_DIR"
+  status_bar_register_menu_preview_hooks
 }
