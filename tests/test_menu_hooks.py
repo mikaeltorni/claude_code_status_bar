@@ -93,3 +93,6 @@ def test_aggregate_preview_is_above_help_line():
     assert len(preview_block) >= 5
     assert result.stdout.count("[Codex]") == 1
     assert result.stdout.count("[Qwen]") == 1
+    assert " | [" not in result.stdout
+    qwen_line = next(line for line in lines if "[Qwen]" in line and "Preview:" not in line)
+    assert qwen_line.index("[Qwen]") >= 10

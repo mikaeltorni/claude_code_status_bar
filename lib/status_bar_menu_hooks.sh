@@ -77,7 +77,8 @@ status_bar_render_aggregate_with_preview() {
       printf '  \033[2mPreview: %s\033[0m\n' "$line"
       first=0
     else
-      printf '  \033[2m%s\033[0m\n' "$line"
+      # Align agent labels under the first line's text (after "  Preview: ").
+      printf '           \033[2m%s\033[0m\n' "$line"
     fi
   done <<< "$preview"
   printf '%s\n' "$help_line"
