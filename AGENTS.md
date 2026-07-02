@@ -39,4 +39,4 @@ installer/components.sh        ISC_COMPONENTS manifest
 
 ## Preview behavior
 
-`status_bar_preview.py` builds fixture-based preview strings. `lib/status_bar_menu_hooks.sh` registers preview hooks on `cm_render_submenu` and `cm_render_aggregate` (via `status_bar_wrap_component_menu_preview()` in standalone install, and the master sources the same registrar). The preview line renders immediately above the help/footer line so help stays the absolute bottom line (matching `agent_field_configurator.py`). Nested configurators render the same preview while fields are toggled.
+`status_bar_preview.py` builds fixture-based preview strings. `lib/status_bar_menu_hooks.sh` registers preview hooks on `cm_render_submenu` and `cm_render_aggregate` (via `status_bar_wrap_component_menu_preview()` in standalone install, and the master sources the same registrar). Preview rows render immediately above the help/footer line so help stays the absolute bottom line (matching `agent_field_configurator.py`); the aggregate main-menu preview lists one agent per line. Nested configurators render the same preview while fields are toggled.
