@@ -79,6 +79,7 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
         "context-remaining", "five-hour-limit", "weekly-limit",
     ]
     assert qwen_tokens == ["model-with-reasoning", "current-dir", "context-remaining"]
+    assert (tmp_path / ".config" / "claude_code_status_bar" / "field-selections.json").exists()
 
     claude = tmp_path / ".claude"
     assert (claude / "claude-status-bar").exists()

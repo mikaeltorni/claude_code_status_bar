@@ -8,6 +8,17 @@ _sb_selection_path() {
   python3 "$REPO_DIR/agent_field_selection.py" path "$TARGET_HOME"
 }
 
+# Materialize default field selections so ACC and later re-runs share one file.
+_sb_ensure_selection_defaults() {
+  local path
+  path="$(_sb_selection_path)"
+  if run_as_target test -f "$path"; then
+    return 0
+  fi
+  run_as_target mkdir -p "$(dirname "$path")"
+  run_as_target python3 "$REPO_DIR/agent_field_selection.py" init "$TARGET_HOME"
+}
+
 # status_bar_configure_*_fields - nested configurators (configure_fn).
 status_bar_configure_codex_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" \
@@ -56,6 +67,7 @@ _sb_write_codex_tokens() {
 
 status_bar_install_codex() {
   local config
+  _sb_ensure_selection_defaults
   for config in "$TARGET_HOME/.codex/config.toml" "$TARGET_HOME/.codex-api/config.toml"; do
     _sb_write_codex_tokens "$config" codex
   done

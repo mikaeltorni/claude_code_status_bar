@@ -26,6 +26,20 @@ Press **RIGHT** on any row to open a nested field checklist. A **simulated statu
 
 Field selections are staged in `~/.config/claude_code_status_bar/field-selections.json` and applied on install/reconfigure.
 
+### Setup-chain ordering and ACC coordination
+
+The master installer runs **`claude_code_status_bar` before `agent_command_center`**. ACC’s Local Codex (`qa`) refresh regenerates `~/.codex-qwen/config.toml`; it now reads `[tui] status_line` from `field-selections.json` when that file exists (via `agent_field_selection.py toml-array qwen`). ACC **postflight** also re-runs `claude_code_status_bar/install.sh --select codex_tui,qwen_tui` so `ca` (`~/.codex-api`) and `qa` homes stay aligned after ACC creates or refreshes them.
+
+If you change field selections after an ACC install, re-apply with:
+
+```bash
+bash ~/projects/claude_code_status_bar/install.sh --select codex_tui,qwen_tui
+```
+
+—or re-run `agent_command_center/install.sh` (postflight performs the same re-apply).
+
+`ca` and the default `~/.codex` home intentionally share the **same** Codex `status_line` selection; `~/.codex-api` receives only the `[tui]` upsert (other keys are owned by ACC/plugin setup).
+
 Codex and Qwen share one Codex-style token catalog and TOML writer (`agent_tui_catalog.py`). Claude Code keeps its custom `claude-status-bar` renderer.
 
 ## Codex / Qwen field tokens

@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-from agent_tui_catalog import CODEX_DEFAULT_FIELDS, QWEN_DEFAULT_FIELDS
+from agent_tui_catalog import CODEX_DEFAULT_FIELDS, QWEN_DEFAULT_FIELDS, format_status_line_array
 from status_bar_config import SEGMENT_IDS
 
 AGENT_IDS: tuple[str, ...] = ("codex", "qwen", "claude", "grok", "cline")
@@ -177,6 +177,15 @@ def main(argv: list[str] | None = None) -> int:
     path = Path(args[-1]) if len(args) >= 3 and args[-1].startswith(("/", ".")) else None
     if command == "path":
         print(selection_path(path or (args[2] if len(args) > 2 else None)))
+        return 0
+    if command == "init":
+        home = Path(args[1]) if len(args) > 1 else None
+        save_document(_empty_document(), selection_path(home))
+        return 0
+    if command == "toml-array":
+        home = Path(args[2]) if len(args) > 2 else None
+        fields = get_fields(agent, selection_path(home))
+        print(format_status_line_array(fields))
         return 0
     if command == "get":
         print(json.dumps(get_fields(agent, path)))
