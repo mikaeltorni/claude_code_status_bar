@@ -74,9 +74,10 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     api_tokens = read_status_line_tokens(codex_api)
     qwen_tokens = read_status_line_tokens(qwen)
     assert codex_tokens == api_tokens
+    # Rate-limit fields default off (dedicated taskbar bar owns them now).
     assert codex_tokens == [
         "model-with-reasoning", "current-dir", "git-branch",
-        "context-remaining", "five-hour-limit", "weekly-limit",
+        "context-remaining",
     ]
     assert qwen_tokens == ["model-with-reasoning", "current-dir", "context-remaining"]
     assert (tmp_path / ".config" / "claude_code_status_bar" / "field-selections.json").exists()
@@ -85,8 +86,9 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     assert (claude / "claude-status-bar").exists()
     settings = json.loads((claude / "settings.json").read_text(encoding="utf-8"))
     assert "statusLine" in settings
+    # Rate-limit segments default off (dedicated taskbar bar owns them now).
     assert read_claude_segments(tmp_path) == [
-        "model", "project", "context", "five_hour", "weekly", "diff", "cost",
+        "model", "project", "context", "diff", "cost",
     ]
 
 

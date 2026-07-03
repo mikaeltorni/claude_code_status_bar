@@ -58,7 +58,7 @@ def test_list_components_is_side_effect_free(tmp_path):
     assert not (tmp_path / ".claude").exists()
 
 
-def test_default_install_installs_claude_core_and_all_segments(tmp_path):
+def test_default_install_installs_claude_core_and_default_segments(tmp_path):
     result = run_install(tmp_path, "--default")
     assert result.returncode == 0, result.stderr
     claude = tmp_path / ".claude"
@@ -74,8 +74,10 @@ def test_default_install_installs_claude_core_and_all_segments(tmp_path):
     settings = json.loads((claude / "settings.json").read_text())
     assert settings["statusLine"]["type"] == "command"
     assert "claude-status-bar" in settings["statusLine"]["command"]
+    # The 5-hour and weekly rate-limit segments are intentionally off by
+    # default; they now have a dedicated taskbar bar. Still selectable.
     assert read_segments(tmp_path) == [
-        "model", "project", "context", "five_hour", "weekly", "diff", "cost",
+        "model", "project", "context", "diff", "cost",
     ]
 
 
@@ -113,7 +115,9 @@ def test_reinstall_is_idempotent_and_preserves_unrelated_settings(tmp_path):
 
 def test_reselect_replaces_previous_segment_choice(tmp_path):
     run_install(tmp_path, "--default")
-    assert len(read_segments(tmp_path)) == 7
+    assert read_segments(tmp_path) == [
+        "model", "project", "context", "diff", "cost",
+    ]
     selection = tmp_path / ".config/claude_code_status_bar/field-selections.json"
     selection.parent.mkdir(parents=True, exist_ok=True)
     selection.write_text(

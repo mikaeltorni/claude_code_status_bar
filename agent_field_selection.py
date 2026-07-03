@@ -37,6 +37,14 @@ CLINE_FIELD_IDS: tuple[str, ...] = (
     "diff-stats",
 )
 
+# Claude Code status bar default segments. The 5-hour and weekly rate-limit
+# segments are intentionally omitted from the default: those quotas now have a
+# dedicated taskbar bar, so the CLI status line stays uncluttered by default.
+# Both remain selectable in the field menu for anyone who wants them back.
+CLAUDE_DEFAULT_FIELDS: tuple[str, ...] = tuple(
+    seg for seg in SEGMENT_IDS if seg not in ("five_hour", "weekly")
+)
+
 GROK_DEFAULT_FIELDS: tuple[str, ...] = GROK_FIELD_IDS
 CLINE_DEFAULT_FIELDS: tuple[str, ...] = CLINE_FIELD_IDS
 
@@ -59,7 +67,7 @@ CLINE_FIELD_LABELS: dict[str, str] = {
 DEFAULTS: dict[str, list[str]] = {
     "codex": list(CODEX_DEFAULT_FIELDS),
     "qwen": list(QWEN_DEFAULT_FIELDS),
-    "claude": list(SEGMENT_IDS),
+    "claude": list(CLAUDE_DEFAULT_FIELDS),
     "grok": list(GROK_DEFAULT_FIELDS),
     "cline": list(CLINE_DEFAULT_FIELDS),
 }

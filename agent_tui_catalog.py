@@ -27,13 +27,14 @@ CODEX_FIELD_IDS: tuple[str, ...] = (
     "total-output-tokens",
 )
 
+# The 5-hour and weekly rate-limit fields are intentionally omitted from the
+# default: those quotas now have a dedicated taskbar bar, so the CLI status
+# line stays uncluttered by default. Both remain selectable in the field menu.
 CODEX_DEFAULT_FIELDS: tuple[str, ...] = (
     "model-with-reasoning",
     "current-dir",
     "git-branch",
     "context-remaining",
-    "five-hour-limit",
-    "weekly-limit",
 )
 
 QWEN_DEFAULT_FIELDS: tuple[str, ...] = (
