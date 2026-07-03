@@ -74,11 +74,10 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     api_tokens = read_status_line_tokens(codex_api)
     qwen_tokens = read_status_line_tokens(qwen)
     assert codex_tokens == api_tokens
-    # Every token defaults on except the rate-limit fields (dedicated taskbar
-    # bar owns those now).
+    # Rate-limit fields plus run-state, context-used, codex-version, and
+    # pull-request-number default off; the rest of the catalog defaults on.
     assert codex_tokens == [
         "model-with-reasoning", "current-dir", "git-branch", "context-remaining",
-        "run-state", "context-used", "codex-version", "pull-request-number",
         "branch-changes", "used-tokens", "total-input-tokens", "total-output-tokens",
     ]
     assert qwen_tokens == ["model-with-reasoning", "current-dir", "context-remaining"]

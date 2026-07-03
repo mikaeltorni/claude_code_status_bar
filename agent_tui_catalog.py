@@ -27,11 +27,20 @@ CODEX_FIELD_IDS: tuple[str, ...] = (
     "total-output-tokens",
 )
 
-# Every Codex status-line token is enabled by default except the 5-hour and
-# weekly rate-limit fields: those quotas have a dedicated taskbar bar, so they
-# stay off here. Both rate-limit fields remain selectable in the field menu.
+# Codex status-line defaults. The 5-hour and weekly rate-limit fields stay off
+# (the dedicated taskbar bar owns those quotas). run-state, context-used,
+# codex-version, and pull-request-number are also off by default to keep the
+# line focused. All of these remain selectable in the field menu.
+CODEX_DEFAULT_OFF: tuple[str, ...] = (
+    "five-hour-limit",
+    "weekly-limit",
+    "run-state",
+    "context-used",
+    "codex-version",
+    "pull-request-number",
+)
 CODEX_DEFAULT_FIELDS: tuple[str, ...] = tuple(
-    token for token in CODEX_FIELD_IDS if token not in ("five-hour-limit", "weekly-limit")
+    token for token in CODEX_FIELD_IDS if token not in CODEX_DEFAULT_OFF
 )
 
 QWEN_DEFAULT_FIELDS: tuple[str, ...] = (
