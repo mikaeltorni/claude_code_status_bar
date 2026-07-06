@@ -21,6 +21,7 @@ CLAUDE_FIXTURE: dict = {
     "workspace": {"project_dir": "/home/u/claude_code_status_bar"},
     "context_window": {
         "total_input_tokens": 63249,
+        "total_output_tokens": 5120,
         "context_window_size": 200000,
         "used_percentage": 31,
     },

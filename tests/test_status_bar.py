@@ -31,6 +31,7 @@ class StatusBarCommandTests(unittest.TestCase):
             "workspace": {"project_dir": "/work/claude_code_status_bar/"},
             "context_window": {
                 "total_input_tokens": 63_249,
+                "total_output_tokens": 5_120,
                 "context_window_size": 200_000,
                 "used_percentage": 31,
             },
@@ -52,7 +53,7 @@ class StatusBarCommandTests(unittest.TestCase):
         self.assertEqual(
             result.stdout,
             "Opus · low | claude_code_status_bar | 63.2k/200.0k (31%)"
-            " | 5h:90% | wk:60% | +120/-8 | $1.42\n",
+            " | 5h:90% | wk:60% | +120/-8 | in:63.2k out:5.1k | $1.42\n",
         )
 
     def test_uses_model_and_workspace_fallbacks(self):

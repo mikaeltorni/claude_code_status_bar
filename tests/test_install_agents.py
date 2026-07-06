@@ -89,7 +89,7 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     assert "statusLine" in settings
     # Rate-limit segments default off (dedicated taskbar bar owns them now).
     assert read_claude_segments(tmp_path) == [
-        "model", "project", "context", "diff", "cost",
+        "model", "project", "context", "diff", "tokens", "cost",
     ]
 
 

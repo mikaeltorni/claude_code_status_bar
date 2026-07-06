@@ -12,6 +12,7 @@ FULL_PAYLOAD = {
     "workspace": {"project_dir": "/home/u/claude_code_status_bar"},
     "context_window": {
         "total_input_tokens": 63249,
+        "total_output_tokens": 5120,
         "context_window_size": 200000,
         "used_percentage": 31,
     },
@@ -26,7 +27,8 @@ FULL_PAYLOAD = {
 def test_none_selection_renders_every_segment(monkeypatch):
     monkeypatch.setattr(status_bar_render, "enabled_segments", lambda: None)
     line = status_bar_render.build_status_line(FULL_PAYLOAD)
-    assert line.count("|") == 6  # seven segments => six separators
+    assert line.count("|") == 7  # eight segments => seven separators
+    assert "in:63.2k out:5.1k" in line
     assert "Opus · low" in line
     assert "claude_code_status_bar" in line
     assert "$1.42" in line
