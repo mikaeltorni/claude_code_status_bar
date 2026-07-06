@@ -4,11 +4,13 @@
 
 The source of truth is `claude-status-bar` (and its `status_bar_*.py` modules) in this repo, but Claude Code runs the **installed copy** under `~/.claude/`. Editing only the repo files will not change what shows in the status bar.
 
-After editing the script or any module, sync the installed copy:
+**Always auto-apply**: after editing the script or any module, immediately sync the installed copy without waiting to be asked — changes are invisible in the live bar until installed. Also make sure any newly added segment id is enabled in `~/.claude/claude-status-bar.conf`, since an existing conf preserves the old segment selection.
 
 ```bash
 bash install.sh --select claude_tui
 ```
+
+Then smoke-test the installed copy by piping a sample JSON payload to `~/.claude/claude-status-bar`.
 
 ## Five-agent TUI ownership
 
