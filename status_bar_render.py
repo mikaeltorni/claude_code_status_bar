@@ -14,6 +14,7 @@ Components:
 
 from __future__ import annotations
 
+import json
 import os
 
 from status_bar_config import SEGMENT_IDS, enabled_segments, is_segment_enabled
@@ -100,6 +101,41 @@ def _segment_diff(data: dict) -> str | None:
     return None
 
 
+def _token_high_water(session_id: str, tokens_in: int, tokens_out: int) -> tuple[int, int]:
+    """Clamp cumulative token totals to a per-session high-water mark.
+
+    ``context_window.total_*_tokens`` reflect the *most recent* API response.
+    Sidechain calls (subagents, haiku utility calls such as title generation)
+    report tiny totals, which made the bar flicker between e.g. 162k and 1-6.
+    Cumulative session totals never legitimately shrink, so we persist the max
+    seen per session and never render below it. State errors are non-fatal.
+    """
+    if not session_id:
+        return tokens_in, tokens_out
+    try:
+        state_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".state")
+        os.makedirs(state_dir, exist_ok=True)
+        path = os.path.join(state_dir, f"tokens-{session_id}.json")
+        prev_in = prev_out = 0
+        try:
+            with open(path, encoding="utf-8") as fh:
+                prev = json.load(fh)
+            prev_in = int(prev.get("in", 0))
+            prev_out = int(prev.get("out", 0))
+        except (OSError, ValueError):
+            pass
+        tokens_in = max(tokens_in, prev_in)
+        tokens_out = max(tokens_out, prev_out)
+        if tokens_in > prev_in or tokens_out > prev_out:
+            tmp = f"{path}.tmp.{os.getpid()}"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump({"in": tokens_in, "out": tokens_out}, fh)
+            os.replace(tmp, path)
+    except OSError:
+        logger.debug("token high-water state unavailable", exc_info=True)
+    return tokens_in, tokens_out
+
+
 def _segment_tokens(data: dict) -> str | None:
     """Render token in/out counts as ``in:x out:y`` (Codex-style)."""
     ctx = data.get("context_window") or {}
@@ -107,7 +143,10 @@ def _segment_tokens(data: dict) -> str | None:
     tokens_out = _number(ctx.get("total_output_tokens"), "context_window.total_output_tokens")
     if tokens_in is None and tokens_out is None:
         return None
-    return f"in:{format_tokens(int(tokens_in or 0))} out:{format_tokens(int(tokens_out or 0))}"
+    tokens_in, tokens_out = _token_high_water(
+        str(data.get("session_id") or ""), int(tokens_in or 0), int(tokens_out or 0)
+    )
+    return f"in:{format_tokens(tokens_in)} out:{format_tokens(tokens_out)}"
 
 
 def _segment_cost(data: dict) -> str | None:

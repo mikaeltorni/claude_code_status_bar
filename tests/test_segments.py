@@ -54,3 +54,31 @@ def test_disabled_segment_is_omitted_even_when_data_present(monkeypatch):
     line = status_bar_render.build_status_line(FULL_PAYLOAD)
     assert "claude_code_status_bar" not in line
     assert "Opus · low" in line
+
+
+def test_tokens_segment_never_shrinks_within_a_session(monkeypatch, tmp_path):
+    # Sidechain payloads (subagents, haiku utility calls) report tiny totals;
+    # the segment must hold the session's high-water mark instead of dipping.
+    monkeypatch.setattr(status_bar_render, "__file__", str(tmp_path / "render.py"))
+    monkeypatch.setattr(status_bar_render, "enabled_segments", lambda: {"tokens"})
+    payload = dict(FULL_PAYLOAD, session_id="sess-1")
+    assert status_bar_render.build_status_line(payload) == "in:63.2k out:5.1k"
+    payload["context_window"] = dict(
+        FULL_PAYLOAD["context_window"], total_input_tokens=6, total_output_tokens=1
+    )
+    assert status_bar_render.build_status_line(payload) == "in:63.2k out:5.1k"
+    # A genuinely larger total still moves the mark forward.
+    payload["context_window"]["total_input_tokens"] = 70_000
+    assert status_bar_render.build_status_line(payload) == "in:70.0k out:5.1k"
+
+
+def test_tokens_high_water_is_isolated_per_session(monkeypatch, tmp_path):
+    monkeypatch.setattr(status_bar_render, "__file__", str(tmp_path / "render.py"))
+    monkeypatch.setattr(status_bar_render, "enabled_segments", lambda: {"tokens"})
+    big = dict(FULL_PAYLOAD, session_id="sess-a")
+    assert status_bar_render.build_status_line(big) == "in:63.2k out:5.1k"
+    small = dict(FULL_PAYLOAD, session_id="sess-b")
+    small["context_window"] = dict(
+        FULL_PAYLOAD["context_window"], total_input_tokens=6, total_output_tokens=1
+    )
+    assert status_bar_render.build_status_line(small) == "in:6 out:1"
