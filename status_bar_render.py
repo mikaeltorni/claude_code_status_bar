@@ -100,6 +100,16 @@ def _segment_diff(data: dict) -> str | None:
     return None
 
 
+def _segment_tokens(data: dict) -> str | None:
+    """Render token in/out counts as ``in:x out:y`` (Codex-style)."""
+    ctx = data.get("context_window") or {}
+    tokens_in = _number(ctx.get("total_input_tokens"), "context_window.total_input_tokens")
+    tokens_out = _number(ctx.get("total_output_tokens"), "context_window.total_output_tokens")
+    if tokens_in is None and tokens_out is None:
+        return None
+    return f"in:{format_tokens(int(tokens_in or 0))} out:{format_tokens(int(tokens_out or 0))}"
+
+
 def _segment_cost(data: dict) -> str | None:
     """Render the total session cost as ``$x.xx``."""
     usd = _number((data.get("cost") or {}).get("total_cost_usd"), "cost.total_cost_usd")
@@ -117,6 +127,7 @@ _SEGMENTS: tuple[tuple[str, "callable"], ...] = (
     ("five_hour", _segment_five_hour),
     ("weekly", _segment_weekly),
     ("diff", _segment_diff),
+    ("tokens", _segment_tokens),
     ("cost", _segment_cost),
 )
 

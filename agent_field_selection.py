@@ -164,6 +164,7 @@ def label_for_field(agent: str, field_id: str) -> str:
             "five_hour": "5-hour rate limit",
             "weekly": "Weekly rate limit",
             "diff": "Diff line count",
+            "tokens": "Token in/out counts",
             "cost": "Session cost",
         }.get(field_id, field_id)
     if agent == "grok":

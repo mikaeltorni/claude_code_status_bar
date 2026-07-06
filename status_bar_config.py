@@ -44,6 +44,7 @@ SEGMENT_IDS: tuple[str, ...] = (
     "five_hour",
     "weekly",
     "diff",
+    "tokens",
     "cost",
 )
 
