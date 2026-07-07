@@ -27,8 +27,8 @@ def test_qwen_preview_uses_local_fixture():
 def test_aggregate_preview_lists_all_five_agents_on_separate_lines():
     text = preview_all_agents()
     lines = [line for line in text.splitlines() if line.strip()]
-    assert len(lines) == 5
-    for label in ("Codex", "Qwen", "Claude", "Grok", "Cline"):
+    assert len(lines) == 6
+    for label in ("Codex", "Qwen", "OpenRouter", "Claude", "Grok", "Cline"):
         assert any(f"[{label}]" in line for line in lines)
     assert all(line.startswith("[") for line in lines)
     assert " | [" not in text

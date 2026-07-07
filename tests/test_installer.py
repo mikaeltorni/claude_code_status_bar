@@ -54,7 +54,7 @@ def test_list_components_is_side_effect_free(tmp_path):
     result = run_install(tmp_path, "--list-components")
     assert result.returncode == 0, result.stderr
     ids = [line.split("\t")[0] for line in result.stdout.splitlines() if "\t" in line]
-    assert ids == ["codex_tui", "qwen_tui", "claude_tui", "grok_tui", "cline_tui"]
+    assert ids == ["codex_tui", "qwen_tui", "openrouter_tui", "claude_tui", "grok_tui", "cline_tui"]
     assert not (tmp_path / ".claude").exists()
 
 

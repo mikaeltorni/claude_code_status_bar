@@ -48,14 +48,14 @@ def test_list_components_five_agents_in_order(tmp_path):
     result = run_install(tmp_path, "--list-components")
     assert result.returncode == 0, result.stderr
     ids = [line.split("\t")[0] for line in result.stdout.splitlines() if "\t" in line]
-    assert ids == ["codex_tui", "qwen_tui", "claude_tui", "grok_tui", "cline_tui"]
+    assert ids == ["codex_tui", "qwen_tui", "openrouter_tui", "claude_tui", "grok_tui", "cline_tui"]
 
 
 def test_list_configurable_components_includes_all_five(tmp_path):
     result = run_install(tmp_path, "--list-configurable-components")
     assert result.returncode == 0, result.stderr
     assert result.stdout.splitlines() == [
-        "codex_tui", "qwen_tui", "claude_tui", "grok_tui", "cline_tui",
+        "codex_tui", "qwen_tui", "openrouter_tui", "claude_tui", "grok_tui", "cline_tui",
     ]
 
 

@@ -56,6 +56,13 @@ QWEN_FIXTURE: dict[str, str] = {
     "context-remaining": "42% ctx",
 }
 
+OPENROUTER_FIXTURE: dict[str, str] = {
+    **CODEX_FIXTURE,
+    "model-with-reasoning": "tencent/hy3:free · high",
+    "current-dir": "agent_command_center",
+    "context-remaining": "42% ctx",
+}
+
 GROK_FIXTURE: dict[str, str] = {
     "model": "grok-build",
     "working-directory": "installation_scripts",
@@ -100,6 +107,8 @@ def preview_for_agent(agent: str, fields: list[str] | None = None, target_home: 
         return preview_codex_tokens(selected, CODEX_FIXTURE)
     if agent == "qwen":
         return preview_codex_tokens(selected, QWEN_FIXTURE)
+    if agent == "openrouter":
+        return preview_codex_tokens(selected, OPENROUTER_FIXTURE)
     if agent == "claude":
         return preview_claude_segments(selected)
     if agent == "grok":
@@ -119,6 +128,7 @@ def preview_for_component(component_id: str, target_home: Path | None = None) ->
 AGGREGATE_AGENT_LABELS: tuple[tuple[str, str], ...] = (
     ("codex", "Codex"),
     ("qwen", "Qwen"),
+    ("openrouter", "OpenRouter"),
     ("claude", "Claude"),
     ("grok", "Grok"),
     ("cline", "Cline"),
@@ -138,7 +148,7 @@ def preview_all_agents(target_home: Path | None = None) -> str:
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        print("Usage: status_bar_preview.py {codex|qwen|claude|grok|cline|component} ...", file=sys.stderr)
+        print("Usage: status_bar_preview.py {codex|qwen|openrouter|claude|grok|cline|component} ...", file=sys.stderr)
         return 2
     command = args[0]
     if command == "component":

@@ -28,6 +28,10 @@ status_bar_configure_qwen_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" \
     python3 "$REPO_DIR/agent_field_configurator.py" qwen "$TARGET_HOME"
 }
+status_bar_configure_openrouter_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" openrouter "$TARGET_HOME"
+}
 status_bar_configure_claude_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" \
     python3 "$REPO_DIR/agent_field_configurator.py" claude "$TARGET_HOME"
@@ -47,6 +51,9 @@ status_bar_codex_preview_status() {
 }
 status_bar_qwen_preview_status() {
   python3 "$REPO_DIR/status_bar_preview.py" component qwen_tui "$TARGET_HOME" 2>/dev/null || true
+}
+status_bar_openrouter_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component openrouter_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_claude_preview_status() {
   python3 "$REPO_DIR/status_bar_preview.py" component claude_tui "$TARGET_HOME" 2>/dev/null || true
@@ -86,6 +93,16 @@ status_bar_install_qwen() {
 
 detect_qwen_tui() {
   local config="$TARGET_HOME/.codex-qwen/config.toml"
+  [[ -f "$config" ]] && grep -q 'status_line' "$config"
+}
+
+status_bar_install_openrouter() {
+  _sb_write_codex_tokens "$TARGET_HOME/.codex-openrouter/config.toml" openrouter
+  msg "Configured OpenRouter (Codex) native TUI status bar (~/.codex-openrouter for oa)"
+}
+
+detect_openrouter_tui() {
+  local config="$TARGET_HOME/.codex-openrouter/config.toml"
   [[ -f "$config" ]] && grep -q 'status_line' "$config"
 }
 
