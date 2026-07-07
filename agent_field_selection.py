@@ -10,12 +10,13 @@ from pathlib import Path
 from agent_tui_catalog import CODEX_DEFAULT_FIELDS, QWEN_DEFAULT_FIELDS, format_status_line_array
 from status_bar_config import SEGMENT_IDS
 
-AGENT_IDS: tuple[str, ...] = ("codex", "qwen", "openrouter", "claude", "grok", "cline")
+AGENT_IDS: tuple[str, ...] = ("codex", "qwen", "openrouter", "nvidia", "claude", "grok", "cline")
 
 COMPONENT_TO_AGENT: dict[str, str] = {
     "codex_tui": "codex",
     "qwen_tui": "qwen",
     "openrouter_tui": "openrouter",
+    "nvidia_tui": "nvidia",
     "claude_tui": "claude",
     "grok_tui": "grok",
     "cline_tui": "cline",
@@ -70,6 +71,9 @@ DEFAULTS: dict[str, list[str]] = {
     "qwen": list(QWEN_DEFAULT_FIELDS),
     # OpenRouter Codex (oa) shares the Codex/Qwen field catalog and defaults.
     "openrouter": list(QWEN_DEFAULT_FIELDS),
+    # NVIDIA Codex (na) shares the Codex/Qwen field catalog and defaults: the
+    # full Codex rich status line minus the rate-limit segments.
+    "nvidia": list(QWEN_DEFAULT_FIELDS),
     "claude": list(CLAUDE_DEFAULT_FIELDS),
     "grok": list(GROK_DEFAULT_FIELDS),
     "cline": list(CLINE_DEFAULT_FIELDS),
@@ -140,7 +144,7 @@ def toggle_field(agent: str, field_id: str, path: Path | None = None) -> list[st
 
 def catalog_for_agent(agent: str) -> tuple[str, ...]:
     agent = COMPONENT_TO_AGENT.get(agent, agent)
-    if agent in ("codex", "qwen", "openrouter"):
+    if agent in ("codex", "qwen", "openrouter", "nvidia"):
         from agent_tui_catalog import CODEX_FIELD_IDS
 
         return CODEX_FIELD_IDS
@@ -155,7 +159,7 @@ def catalog_for_agent(agent: str) -> tuple[str, ...]:
 
 def label_for_field(agent: str, field_id: str) -> str:
     agent = COMPONENT_TO_AGENT.get(agent, agent)
-    if agent in ("codex", "qwen", "openrouter"):
+    if agent in ("codex", "qwen", "openrouter", "nvidia"):
         from agent_tui_catalog import CODEX_FIELD_LABELS
 
         return CODEX_FIELD_LABELS.get(field_id, field_id)

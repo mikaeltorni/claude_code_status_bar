@@ -32,6 +32,10 @@ status_bar_configure_openrouter_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" \
     python3 "$REPO_DIR/agent_field_configurator.py" openrouter "$TARGET_HOME"
 }
+status_bar_configure_nvidia_fields() {
+  run_as_target env TARGET_HOME="$TARGET_HOME" \
+    python3 "$REPO_DIR/agent_field_configurator.py" nvidia "$TARGET_HOME"
+}
 status_bar_configure_claude_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" \
     python3 "$REPO_DIR/agent_field_configurator.py" claude "$TARGET_HOME"
@@ -54,6 +58,9 @@ status_bar_qwen_preview_status() {
 }
 status_bar_openrouter_preview_status() {
   python3 "$REPO_DIR/status_bar_preview.py" component openrouter_tui "$TARGET_HOME" 2>/dev/null || true
+}
+status_bar_nvidia_preview_status() {
+  python3 "$REPO_DIR/status_bar_preview.py" component nvidia_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_claude_preview_status() {
   python3 "$REPO_DIR/status_bar_preview.py" component claude_tui "$TARGET_HOME" 2>/dev/null || true
@@ -103,6 +110,16 @@ status_bar_install_openrouter() {
 
 detect_openrouter_tui() {
   local config="$TARGET_HOME/.codex-openrouter/config.toml"
+  [[ -f "$config" ]] && grep -q 'status_line' "$config"
+}
+
+status_bar_install_nvidia() {
+  _sb_write_codex_tokens "$TARGET_HOME/.codex-nvidia/config.toml" nvidia
+  msg "Configured NVIDIA (Codex) native TUI status bar (~/.codex-nvidia for na)"
+}
+
+detect_nvidia_tui() {
+  local config="$TARGET_HOME/.codex-nvidia/config.toml"
   [[ -f "$config" ]] && grep -q 'status_line' "$config"
 }
 

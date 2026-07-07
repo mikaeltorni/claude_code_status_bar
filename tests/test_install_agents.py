@@ -48,14 +48,14 @@ def test_list_components_five_agents_in_order(tmp_path):
     result = run_install(tmp_path, "--list-components")
     assert result.returncode == 0, result.stderr
     ids = [line.split("\t")[0] for line in result.stdout.splitlines() if "\t" in line]
-    assert ids == ["codex_tui", "qwen_tui", "openrouter_tui", "claude_tui", "grok_tui", "cline_tui"]
+    assert ids == ["codex_tui", "qwen_tui", "openrouter_tui", "nvidia_tui", "claude_tui", "grok_tui", "cline_tui"]
 
 
 def test_list_configurable_components_includes_all_five(tmp_path):
     result = run_install(tmp_path, "--list-configurable-components")
     assert result.returncode == 0, result.stderr
     assert result.stdout.splitlines() == [
-        "codex_tui", "qwen_tui", "openrouter_tui", "claude_tui", "grok_tui", "cline_tui",
+        "codex_tui", "qwen_tui", "openrouter_tui", "nvidia_tui", "claude_tui", "grok_tui", "cline_tui",
     ]
 
 
@@ -73,10 +73,14 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     openrouter = tmp_path / ".codex-openrouter" / "config.toml"
     assert openrouter.exists()
 
+    nvidia = tmp_path / ".codex-nvidia" / "config.toml"
+    assert nvidia.exists()
+
     codex_tokens = read_status_line_tokens(codex)
     api_tokens = read_status_line_tokens(codex_api)
     qwen_tokens = read_status_line_tokens(qwen)
     openrouter_tokens = read_status_line_tokens(openrouter)
+    nvidia_tokens = read_status_line_tokens(nvidia)
     assert codex_tokens == api_tokens
     # Rate-limit fields plus run-state, context-used, codex-version, and
     # pull-request-number default off; the rest of the catalog defaults on.
@@ -89,6 +93,8 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     # rich default status line (tokens in/out/used, ...), minus the rate limits.
     assert qwen_tokens == rich_default
     assert openrouter_tokens == rich_default
+    # The NVIDIA (na) instance shares the same rich default status line.
+    assert nvidia_tokens == rich_default
     assert (tmp_path / ".config" / "claude_code_status_bar" / "field-selections.json").exists()
 
     claude = tmp_path / ".claude"
