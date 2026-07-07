@@ -70,17 +70,25 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     assert codex_api.exists()
     assert qwen.exists()
 
+    openrouter = tmp_path / ".codex-openrouter" / "config.toml"
+    assert openrouter.exists()
+
     codex_tokens = read_status_line_tokens(codex)
     api_tokens = read_status_line_tokens(codex_api)
     qwen_tokens = read_status_line_tokens(qwen)
+    openrouter_tokens = read_status_line_tokens(openrouter)
     assert codex_tokens == api_tokens
     # Rate-limit fields plus run-state, context-used, codex-version, and
     # pull-request-number default off; the rest of the catalog defaults on.
-    assert codex_tokens == [
+    rich_default = [
         "model-with-reasoning", "current-dir", "git-branch", "context-remaining",
         "branch-changes", "used-tokens", "total-input-tokens", "total-output-tokens",
     ]
-    assert qwen_tokens == ["model-with-reasoning", "current-dir", "context-remaining"]
+    assert codex_tokens == rich_default
+    # The isolated Qwen (qa) and OpenRouter (oa) Codex instances share Codex's
+    # rich default status line (tokens in/out/used, ...), minus the rate limits.
+    assert qwen_tokens == rich_default
+    assert openrouter_tokens == rich_default
     assert (tmp_path / ".config" / "claude_code_status_bar" / "field-selections.json").exists()
 
     claude = tmp_path / ".claude"

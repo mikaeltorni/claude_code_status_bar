@@ -43,11 +43,11 @@ CODEX_DEFAULT_FIELDS: tuple[str, ...] = tuple(
     token for token in CODEX_FIELD_IDS if token not in CODEX_DEFAULT_OFF
 )
 
-QWEN_DEFAULT_FIELDS: tuple[str, ...] = (
-    "model-with-reasoning",
-    "current-dir",
-    "context-remaining",
-)
+# The Local/Qwen (qa) and OpenRouter (oa) isolated Codex instances share the
+# same rich native status line as Codex (tokens used, input/output token totals,
+# git branch, branch changes, ...), excluding only the 5-hour/weekly rate-limit
+# fields which the dedicated taskbar bar owns (they stay in CODEX_DEFAULT_OFF).
+QWEN_DEFAULT_FIELDS: tuple[str, ...] = CODEX_DEFAULT_FIELDS
 
 CODEX_FIELD_LABELS: dict[str, str] = {
     "model-with-reasoning": "Model + reasoning effort",
