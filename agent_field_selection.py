@@ -7,10 +7,32 @@ import os
 import sys
 from pathlib import Path
 
-from agent_tui_catalog import CODEX_DEFAULT_FIELDS, QWEN_DEFAULT_FIELDS, format_status_line_array
+from agent_tui_catalog import (
+    CODEX_DEFAULT_FIELDS,
+    QWEN_DEFAULT_FIELDS,
+    format_status_line_array,
+)
+from status_bar_logging import get_logger
 from status_bar_config import SEGMENT_IDS
 
+logger = get_logger(__name__)
+
 AGENT_IDS: tuple[str, ...] = ("codex", "qwen", "openrouter", "nvidia", "claude", "grok", "cline")
+CODEX_STYLE_AGENTS: tuple[str, ...] = ("codex", "qwen", "openrouter", "nvidia")
+
+# The rich default immediately before ``project-name`` was introduced. This
+# exact-match migration replaces its branch field, while the branchless path
+# below repairs selections made from an older minimal/default configuration.
+LEGACY_CODEX_DEFAULT_FIELDS: tuple[str, ...] = (
+    "model-with-reasoning",
+    "current-dir",
+    "git-branch",
+    "context-remaining",
+    "branch-changes",
+    "used-tokens",
+    "total-input-tokens",
+    "total-output-tokens",
+)
 
 COMPONENT_TO_AGENT: dict[str, str] = {
     "codex_tui": "codex",
@@ -78,6 +100,53 @@ DEFAULTS: dict[str, list[str]] = {
     "grok": list(GROK_DEFAULT_FIELDS),
     "cline": list(CLINE_DEFAULT_FIELDS),
 }
+
+
+def migrate_codex_worktree_field(path: Path | None = None) -> bool:
+    """Ensure existing Codex-style selections show the active worktree.
+
+    Args:
+        path: Optional ``field-selections.json`` path. When omitted, use the
+            target user's standard selection path.
+
+    Returns:
+        ``True`` when one or more selections were updated, otherwise ``False``.
+
+    The migration is intentionally narrow. It replaces the repository's
+    previous exact rich default (which displayed ``git-branch``) and adds the
+    new worktree field to branchless selections. A user who explicitly kept
+    ``git-branch`` is left untouched so custom field choices remain stable.
+    """
+    path = path or selection_path()
+    if not path.exists():
+        return False
+
+    document = load_document(path)
+    changed = False
+    for agent in CODEX_STYLE_AGENTS:
+        fields = list(document.get(agent, DEFAULTS[agent]))
+        if fields == list(LEGACY_CODEX_DEFAULT_FIELDS):
+            replacement = list(CODEX_DEFAULT_FIELDS)
+        elif (
+            "project-name" not in fields
+            and "git-branch" not in fields
+            and "current-dir" in fields
+        ):
+            current_dir_index = fields.index("current-dir")
+            replacement = [
+                *fields[: current_dir_index + 1],
+                "project-name",
+                *fields[current_dir_index + 1 :],
+            ]
+        else:
+            continue
+        document[agent] = replacement
+        changed = True
+
+    if changed:
+        save_document(document, path)
+        logger.info("migrated Codex status selections to project-name in %s", path)
+    return changed
 
 
 def selection_path(target_home: str | Path | None = None) -> Path:
@@ -183,13 +252,26 @@ def label_for_field(agent: str, field_id: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    if len(args) < 2:
+    if not args:
         print(
-            "Usage: agent_field_selection.py {get|set|toggle|path} AGENT [FIELD] [PATH]",
+            "Usage: agent_field_selection.py {get|set|toggle|path} AGENT [FIELD] [PATH]\n"
+            "       agent_field_selection.py migrate [PATH]",
             file=sys.stderr,
         )
         return 2
-    command, agent = args[0], args[1]
+    command = args[0]
+    if command == "migrate":
+        path = Path(args[1]) if len(args) > 1 else selection_path()
+        migrate_codex_worktree_field(path)
+        return 0
+    if len(args) < 2:
+        print(
+            "Usage: agent_field_selection.py {get|set|toggle|path} AGENT [FIELD] [PATH]\n"
+            "       agent_field_selection.py migrate [PATH]",
+            file=sys.stderr,
+        )
+        return 2
+    agent = args[1]
     path = Path(args[-1]) if len(args) >= 3 and args[-1].startswith(("/", ".")) else None
     if command == "path":
         print(selection_path(path or (args[2] if len(args) > 2 else None)))

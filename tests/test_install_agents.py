@@ -83,9 +83,9 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     nvidia_tokens = read_status_line_tokens(nvidia)
     assert codex_tokens == api_tokens
     # Rate-limit fields plus run-state, context-used, codex-version, and
-    # pull-request-number default off; the rest of the catalog defaults on.
+    # pull-request-number and git-branch default off; the worktree name is on.
     rich_default = [
-        "model-with-reasoning", "current-dir", "git-branch", "context-remaining",
+        "model-with-reasoning", "current-dir", "project-name", "context-remaining",
         "branch-changes", "used-tokens", "total-input-tokens", "total-output-tokens",
     ]
     assert codex_tokens == rich_default
@@ -116,3 +116,23 @@ def test_reinstall_is_idempotent_for_codex_homes(tmp_path):
     assert second.returncode == 0, second.stderr
     codex_after_second = (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
     assert codex_after_first == codex_after_second
+
+
+def test_reinstall_migrates_existing_codex_selection_to_worktree(tmp_path):
+    selection = tmp_path / ".config" / "claude_code_status_bar" / "field-selections.json"
+    selection.parent.mkdir(parents=True)
+    selection.write_text(
+        json.dumps({
+            "codex": ["model-with-reasoning", "current-dir", "context-remaining"],
+            "qwen": ["model-with-reasoning", "current-dir", "context-remaining"],
+        }) + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_install(tmp_path, "--select", "qwen_tui")
+    assert result.returncode == 0, result.stderr
+
+    document = json.loads(selection.read_text(encoding="utf-8"))
+    assert document["qwen"] == [
+        "model-with-reasoning", "current-dir", "project-name", "context-remaining",
+    ]

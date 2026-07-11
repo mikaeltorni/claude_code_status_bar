@@ -6,9 +6,17 @@ import json
 
 from agent_tui_catalog import (
     CODEX_DEFAULT_FIELDS,
+    CODEX_FIELD_IDS,
     read_status_line_tokens,
     write_status_line_tokens,
 )
+
+
+def test_project_name_is_the_default_codex_worktree_field():
+    """Codex defaults use its project-root/worktree name instead of ``master``."""
+    assert "project-name" in CODEX_FIELD_IDS
+    assert "project-name" in CODEX_DEFAULT_FIELDS
+    assert "git-branch" not in CODEX_DEFAULT_FIELDS
 
 
 def test_write_preserves_unrelated_toml_keys(tmp_path):

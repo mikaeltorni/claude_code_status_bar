@@ -7,15 +7,22 @@ from status_bar_preview import preview_all_agents, preview_for_agent
 
 def test_codex_preview_is_non_empty_and_changes_when_field_removed():
     full = preview_for_agent("codex", [
-        "model-with-reasoning", "current-dir", "git-branch",
+        "model-with-reasoning", "current-dir", "project-name",
         "context-remaining", "five-hour-limit", "weekly-limit",
     ])
     reduced = preview_for_agent("codex", ["model-with-reasoning", "current-dir"])
     assert full
     assert reduced
     assert full != reduced
-    assert "master" in full
+    assert "claude_code_status_bar" in full
     assert "master" not in reduced
+
+
+def test_codex_default_preview_shows_worktree_without_master_branch(tmp_path):
+    line = preview_for_agent("codex", target_home=tmp_path)
+
+    assert "claude_code_status_bar" in line
+    assert "master" not in line
 
 
 def test_qwen_preview_uses_local_fixture():

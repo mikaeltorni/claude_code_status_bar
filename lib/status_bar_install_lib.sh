@@ -12,11 +12,10 @@ _sb_selection_path() {
 _sb_ensure_selection_defaults() {
   local path
   path="$(_sb_selection_path)"
-  if run_as_target test -f "$path"; then
-    return 0
+  if ! run_as_target test -f "$path"; then
+    run_as_target mkdir -p "$(dirname "$path")"
+    run_as_target python3 "$REPO_DIR/agent_field_selection.py" init "$TARGET_HOME"
   fi
-  run_as_target mkdir -p "$(dirname "$path")"
-  run_as_target python3 "$REPO_DIR/agent_field_selection.py" init "$TARGET_HOME"
 }
 
 # status_bar_configure_*_fields - nested configurators (configure_fn).
@@ -75,6 +74,10 @@ status_bar_cline_preview_status() {
 _sb_write_codex_tokens() {
   local config="$1" agent="${2:-codex}"
   local tokens
+  # Existing installs keep their field selections, so migrate only the
+  # Codex-style defaults that predate the project-name/worktree item. Keep this
+  # in the shared write path so a single-client install repairs that client too.
+  run_as_target python3 "$REPO_DIR/agent_field_selection.py" migrate "$(_sb_selection_path)"
   tokens="$(python3 "$REPO_DIR/agent_field_selection.py" get "$agent" "$(_sb_selection_path)")"
   run_as_target python3 "$REPO_DIR/agent_tui_install.py" write "$config" "$tokens"
 }

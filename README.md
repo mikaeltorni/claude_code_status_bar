@@ -50,6 +50,7 @@ These map to `[tui] status_line` in Codex-style `config.toml` files (documented 
 | ----- | ----- |
 | `model-with-reasoning` | Model + reasoning effort |
 | `current-dir` | Current directory |
+| `project-name` | Project / active worktree name |
 | `git-branch` | Git branch |
 | `context-remaining` | Context remaining |
 | `five-hour-limit` | 5-hour rate limit |
@@ -63,9 +64,16 @@ These map to `[tui] status_line` in Codex-style `config.toml` files (documented 
 | `total-input-tokens` | Total input tokens |
 | `total-output-tokens` | Total output tokens |
 
-**Default Codex selection:** all six original tokens (`model-with-reasoning` through `weekly-limit`).
+**Default Codex selection:** `model-with-reasoning`, `current-dir`,
+`project-name`, `context-remaining`, `branch-changes`, `used-tokens`,
+`total-input-tokens`, and `total-output-tokens`. `project-name` is Codex's
+project-root basename, so linked worktrees appear by name in the TUI just as
+Claude Code's project segment does. The Git branch, rate-limit, run-state,
+context-used, version, and pull-request fields remain selectable but are off
+by default.
 
-**Default Qwen selection:** `model-with-reasoning`, `current-dir`, `context-remaining`.
+**Default Qwen selection:** the same rich default as Codex, including the
+active worktree name.
 
 ## Claude Code segments
 
