@@ -5,22 +5,27 @@ from __future__ import annotations
 from status_bar_preview import preview_all_agents, preview_for_agent
 
 
-def test_codex_preview_is_non_empty_and_changes_when_field_removed():
+def test_codex_preview_is_non_empty_and_changes_when_branch_removed():
     full = preview_for_agent("codex", [
-        "model-with-reasoning", "current-dir", "project-name",
+        "model-with-reasoning", "current-dir",
         "context-remaining", "five-hour-limit", "weekly-limit",
     ])
     reduced = preview_for_agent("codex", ["model-with-reasoning", "current-dir"])
     assert full
     assert reduced
     assert full != reduced
+    # The worktree (current-dir) is present in both; neither project-name nor
+    # the "master" branch appears.
     assert "claude_code_status_bar" in full
+    assert "master" not in full
     assert "master" not in reduced
 
 
-def test_codex_default_preview_shows_worktree_without_master_branch(tmp_path):
+def test_codex_default_preview_shows_worktree_without_project_or_branch(tmp_path):
     line = preview_for_agent("codex", target_home=tmp_path)
 
+    # The active worktree path is shown, but the project basename and the
+    # "master" branch are absent from the default Codex status line.
     assert "claude_code_status_bar" in line
     assert "master" not in line
 
@@ -28,7 +33,9 @@ def test_codex_default_preview_shows_worktree_without_master_branch(tmp_path):
 def test_qwen_preview_uses_local_fixture():
     line = preview_for_agent("qwen", ["model-with-reasoning", "current-dir", "context-remaining"])
     assert "ornstein" in line
+    # The active worktree path is shown (no inline project basename / branch).
     assert "agent_command_center" in line
+    assert "master" not in line
 
 
 def test_aggregate_preview_lists_all_agents_on_separate_lines():
@@ -49,6 +56,8 @@ def test_claude_preview_honors_segment_selection():
     assert full
     assert subset
     assert full != subset
+    # Claude's project segment is unchanged: the project path appears in both
+    # the full render and a model+project subset.
     assert "claude_code_status_bar" in full
     assert "claude_code_status_bar" in subset
     assert "$1.42" in full

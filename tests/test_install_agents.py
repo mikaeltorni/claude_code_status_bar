@@ -83,9 +83,10 @@ def test_default_install_writes_codex_qwen_and_claude_configs(tmp_path):
     nvidia_tokens = read_status_line_tokens(nvidia)
     assert codex_tokens == api_tokens
     # Rate-limit fields plus run-state, context-used, codex-version, and
-    # pull-request-number and git-branch default off; the worktree name is on.
+    # pull-request-number default off; the active worktree (current-dir) is on
+    # and the project basename + git branch are removed from the status line.
     rich_default = [
-        "model-with-reasoning", "current-dir", "project-name", "context-remaining",
+        "model-with-reasoning", "current-dir", "context-remaining",
         "branch-changes", "used-tokens", "total-input-tokens", "total-output-tokens",
     ]
     assert codex_tokens == rich_default
@@ -132,7 +133,9 @@ def test_reinstall_migrates_existing_codex_selection_to_worktree(tmp_path):
     result = run_install(tmp_path, "--select", "qwen_tui")
     assert result.returncode == 0, result.stderr
 
+    # The project basename and git branch are no longer part of the Codex
+    # status line, so the existing worktree-only selection is left untouched.
     document = json.loads(selection.read_text(encoding="utf-8"))
     assert document["qwen"] == [
-        "model-with-reasoning", "current-dir", "project-name", "context-remaining",
+        "model-with-reasoning", "current-dir", "context-remaining",
     ]

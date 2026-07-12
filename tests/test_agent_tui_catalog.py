@@ -12,10 +12,19 @@ from agent_tui_catalog import (
 )
 
 
-def test_project_name_is_the_default_codex_worktree_field():
-    """Codex defaults use its project-root/worktree name instead of ``master``."""
-    assert "project-name" in CODEX_FIELD_IDS
-    assert "project-name" in CODEX_DEFAULT_FIELDS
+def test_codex_defaults_drop_project_and_branch_but_keep_worktree():
+    """Codex defaults omit project-root basename and branch, keep worktree.
+
+    The project-root basename (``project-name``) and the Git branch
+    (``git-branch``) are removed from the Codex status line; the active worktree
+    (``current-dir``) stays. None of the removed tokens exist in the catalog, and
+    ``current-dir`` is present in both the catalog and the defaults.
+    """
+    assert "current-dir" in CODEX_FIELD_IDS
+    assert "current-dir" in CODEX_DEFAULT_FIELDS
+    assert "project-name" not in CODEX_FIELD_IDS
+    assert "project-name" not in CODEX_DEFAULT_FIELDS
+    assert "git-branch" not in CODEX_FIELD_IDS
     assert "git-branch" not in CODEX_DEFAULT_FIELDS
 
 

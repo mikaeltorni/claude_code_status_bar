@@ -48,7 +48,9 @@ def test_write_qwen_config_toml_uses_status_bar_selections(tmp_path):
     proc = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stderr + proc.stdout
     tokens = read_status_line_tokens(dest / "config.toml")
-    assert tokens == ["model-with-reasoning", "git-branch"]
+    # ``git-branch`` is no longer a valid Codex token and is normalized out of
+    # the status_line (only ``current-dir`` carries the worktree identity).
+    assert tokens == ["model-with-reasoning"]
 
 
 def test_acc_postflight_reapplies_status_bar_install():

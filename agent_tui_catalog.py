@@ -13,8 +13,6 @@ from pathlib import Path
 CODEX_FIELD_IDS: tuple[str, ...] = (
     "model-with-reasoning",
     "current-dir",
-    "project-name",
-    "git-branch",
     "context-remaining",
     "five-hour-limit",
     "weekly-limit",
@@ -28,17 +26,18 @@ CODEX_FIELD_IDS: tuple[str, ...] = (
     "total-output-tokens",
 )
 
-# Codex status-line defaults. ``project-name`` is Codex's project-root basename,
-# which is the active Git worktree name and matches Claude Code's project
-# segment. The branch token stays selectable but is off by default so a branch
-# such as ``master`` does not hide the worktree identity. The 5-hour and weekly
-# rate-limit fields stay off (the dedicated taskbar bar owns those quotas).
-# run-state, context-used, codex-version, and pull-request-number are also off
-# by default to keep the line focused. All of these remain selectable.
+# Codex status-line defaults. The active worktree is shown through ``current-dir``
+# (the worktree directory path), which is the value that distinguishes linked
+# worktrees from one another. The project-root basename (``project-name``) and
+# the Git branch (``git-branch``) are intentionally removed from the Codex
+# status line so the worktree identity stays uncluttered; neither is selectable
+# anymore. The 5-hour and weekly rate-limit fields stay off (the dedicated
+# taskbar bar owns those quotas). run-state, context-used, codex-version, and
+# pull-request-number are also off by default to keep the line focused. All of
+# these remain selectable.
 CODEX_DEFAULT_OFF: tuple[str, ...] = (
     "five-hour-limit",
     "weekly-limit",
-    "git-branch",
     "run-state",
     "context-used",
     "codex-version",
@@ -49,17 +48,16 @@ CODEX_DEFAULT_FIELDS: tuple[str, ...] = tuple(
 )
 
 # The Local/Qwen (qa), OpenRouter (oa), and NVIDIA (na) isolated Codex
-# instances share the same rich native status line as Codex (worktree name,
-# tokens used, input/output token totals, branch changes, ...), excluding the
-# 5-hour/weekly rate-limit and branch fields which the dedicated taskbar bar
-# owns or which are intentionally not part of the default identity display.
+# instances share the same rich native status line as Codex (active worktree
+# path, tokens used, input/output token totals, branch changes, ...). The
+# project-root basename and the Git branch are removed from the Codex status
+# line entirely, so only the worktree path (``current-dir``) carries the
+# worktree identity; the 5-hour/weekly rate-limit fields stay off by default.
 QWEN_DEFAULT_FIELDS: tuple[str, ...] = CODEX_DEFAULT_FIELDS
 
 CODEX_FIELD_LABELS: dict[str, str] = {
     "model-with-reasoning": "Model + reasoning effort",
-    "current-dir": "Current directory",
-    "project-name": "Project / worktree name",
-    "git-branch": "Git branch",
+    "current-dir": "Current directory (active worktree)",
     "context-remaining": "Context remaining",
     "five-hour-limit": "5-hour rate limit",
     "weekly-limit": "Weekly rate limit",

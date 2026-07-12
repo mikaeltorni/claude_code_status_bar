@@ -34,6 +34,12 @@ LEGACY_CODEX_DEFAULT_FIELDS: tuple[str, ...] = (
     "total-output-tokens",
 )
 
+# Tokens the Codex status line no longer presents. The project-root basename
+# (``project-name``) and the Git branch (``git-branch``) are removed entirely so
+# the active worktree (``current-dir``) stays the only worktree identity in the
+# bar; neither removed token is selectable anymore. The worktree path is kept.
+REMOVED_CODEX_DISPLAY_TOKENS: tuple[str, ...] = ("project-name", "git-branch")
+
 COMPONENT_TO_AGENT: dict[str, str] = {
     "codex_tui": "codex",
     "qwen_tui": "qwen",
@@ -103,7 +109,7 @@ DEFAULTS: dict[str, list[str]] = {
 
 
 def migrate_codex_worktree_field(path: Path | None = None) -> bool:
-    """Ensure existing Codex-style selections show the active worktree.
+    """Strip removed project/branch tokens from existing Codex-style selections.
 
     Args:
         path: Optional ``field-selections.json`` path. When omitted, use the
@@ -112,10 +118,13 @@ def migrate_codex_worktree_field(path: Path | None = None) -> bool:
     Returns:
         ``True`` when one or more selections were updated, otherwise ``False``.
 
-    The migration is intentionally narrow. It replaces the repository's
-    previous exact rich default (which displayed ``git-branch``) and adds the
-    new worktree field to branchless selections. A user who explicitly kept
-    ``git-branch`` is left untouched so custom field choices remain stable.
+    The Codex status line no longer shows the project-root basename
+    (``project-name``) or the Git branch (``git-branch``); that identity is
+    carried by the active worktree path (``current-dir``), which is kept. Any
+    existing selection carrying ``project-name`` or ``git-branch`` is rewritten
+    without those tokens, so a stale inline project/branch display never
+    reappears after the fields are removed. ``current-dir`` is preserved so the
+    worktree stays visible in the bar.
     """
     path = path or selection_path()
     if not path.exists():
@@ -126,26 +135,26 @@ def migrate_codex_worktree_field(path: Path | None = None) -> bool:
     for agent in CODEX_STYLE_AGENTS:
         fields = list(document.get(agent, DEFAULTS[agent]))
         if fields == list(LEGACY_CODEX_DEFAULT_FIELDS):
+            # Exact legacy default had ``git-branch`` and no project-name; lift
+            # it to the current default (worktree path kept, branch/project gone).
             replacement = list(CODEX_DEFAULT_FIELDS)
-        elif (
-            "project-name" not in fields
-            and "git-branch" not in fields
-            and "current-dir" in fields
-        ):
-            current_dir_index = fields.index("current-dir")
-            replacement = [
-                *fields[: current_dir_index + 1],
-                "project-name",
-                *fields[current_dir_index + 1 :],
-            ]
-        else:
+            document[agent] = replacement
+            changed = True
             continue
-        document[agent] = replacement
+        stripped = [token for token in fields if token not in REMOVED_CODEX_DISPLAY_TOKENS]
+        if stripped == fields:
+            continue
+        removed = sorted(set(fields) - set(stripped))
+        logger.info(
+            "migrated %s Codex status selection: removed %s in %s",
+            agent, ", ".join(removed), path,
+        )
+        document[agent] = stripped
         changed = True
 
     if changed:
         save_document(document, path)
-        logger.info("migrated Codex status selections to project-name in %s", path)
+        logger.info("migrated Codex status selections to current default in %s", path)
     return changed
 
 
