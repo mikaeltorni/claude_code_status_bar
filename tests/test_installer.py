@@ -77,7 +77,7 @@ def test_default_install_installs_claude_core_and_default_segments(tmp_path):
     # The 5-hour and weekly rate-limit segments are intentionally off by
     # default; they now have a dedicated taskbar bar. Still selectable.
     assert read_segments(tmp_path) == [
-        "model", "context", "diff", "tokens", "cost",
+        "model", "project", "context", "diff", "tokens", "cost",
     ]
 
 
@@ -116,7 +116,7 @@ def test_reinstall_is_idempotent_and_preserves_unrelated_settings(tmp_path):
 def test_reselect_replaces_previous_segment_choice(tmp_path):
     run_install(tmp_path, "--default")
     assert read_segments(tmp_path) == [
-        "model", "context", "diff", "tokens", "cost",
+        "model", "project", "context", "diff", "tokens", "cost",
     ]
     selection = tmp_path / ".config/claude_code_status_bar/field-selections.json"
     selection.parent.mkdir(parents=True, exist_ok=True)

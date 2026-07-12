@@ -47,6 +47,14 @@ def _segment_model(data: dict) -> str | None:
     return None
 
 
+def _segment_project(data: dict) -> str | None:
+    """Render the basename of the active workspace directory."""
+    workspace = data.get("workspace") or {}
+    project_path = workspace.get("project_dir") or workspace.get("current_dir") or data.get("cwd")
+    if project_path:
+        return os.path.basename(str(project_path).rstrip("/"))
+    return None
+
 
 def _segment_context(data: dict) -> str | None:
     """Render context-window usage as ``used/size (pct%)``."""
@@ -153,6 +161,7 @@ def _segment_cost(data: dict) -> str | None:
 # status_bar_config.SEGMENT_IDS and the installer manifest.
 _SEGMENTS: tuple[tuple[str, "callable"], ...] = (
     ("model", _segment_model),
+    ("project", _segment_project),
     ("context", _segment_context),
     ("five_hour", _segment_five_hour),
     ("weekly", _segment_weekly),
@@ -170,7 +179,7 @@ assert tuple(seg_id for seg_id, _ in _SEGMENTS) == SEGMENT_IDS, (
 def build_status_line(data: dict) -> str:
     """Build the status-bar text from a Claude Code status-line payload.
 
-    Segments, in order: model + reasoning effort, context-window
+    Segments, in order: model + reasoning effort, repository name, context-window
     usage, 5-hour rate limit, weekly rate limit, diff line count, and total cost.
     Only segments enabled by the installed selection (see
     :func:`status_bar_config.enabled_segments`) are considered; the rest, and any
