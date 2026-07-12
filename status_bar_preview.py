@@ -34,9 +34,6 @@ CLAUDE_FIXTURE: dict = {
 
 CODEX_FIXTURE: dict[str, str] = {
     "model-with-reasoning": "gpt-5.5 · low",
-    "current-dir": "claude_code_status_bar",
-    "project-name": "claude_code_status_bar",
-    "git-branch": "master",
     "context-remaining": "69% ctx",
     "five-hour-limit": "5h:90%",
     "weekly-limit": "wk:60%",

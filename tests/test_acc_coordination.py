@@ -48,7 +48,9 @@ def test_write_qwen_config_toml_uses_status_bar_selections(tmp_path):
     proc = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stderr + proc.stdout
     tokens = read_status_line_tokens(dest / "config.toml")
-    assert tokens == ["model-with-reasoning", "git-branch"]
+    # The git-branch and current-dir tokens are no longer part of the Codex status
+    # line, so they are dropped by the shared writer.
+    assert tokens == ["model-with-reasoning"]
 
 
 def test_acc_postflight_reapplies_status_bar_install():

@@ -20,19 +20,12 @@ logger = get_logger(__name__)
 AGENT_IDS: tuple[str, ...] = ("codex", "qwen", "openrouter", "nvidia", "claude", "grok", "cline")
 CODEX_STYLE_AGENTS: tuple[str, ...] = ("codex", "qwen", "openrouter", "nvidia")
 
-# The rich default immediately before ``project-name`` was introduced. This
-# exact-match migration replaces its branch field, while the branchless path
-# below repairs selections made from an older minimal/default configuration.
-LEGACY_CODEX_DEFAULT_FIELDS: tuple[str, ...] = (
-    "model-with-reasoning",
-    "current-dir",
-    "git-branch",
-    "context-remaining",
-    "branch-changes",
-    "used-tokens",
-    "total-input-tokens",
-    "total-output-tokens",
-)
+# Tokens the Codex status line no longer presents. ``current-dir`` (the
+# worktree directory path), ``project-name`` (the project-root basename,
+# identical across worktrees), and ``git-branch`` are removed entirely because
+# that identity (project, worktree, branch) is shown in the Kitty window title
+# instead.
+REMOVED_CODEX_DISPLAY_TOKENS: tuple[str, ...] = ("current-dir", "project-name", "git-branch")
 
 COMPONENT_TO_AGENT: dict[str, str] = {
     "codex_tui": "codex",
@@ -66,7 +59,7 @@ CLINE_FIELD_IDS: tuple[str, ...] = (
 # dedicated taskbar bar, so the CLI status line stays uncluttered by default.
 # Both remain selectable in the field menu for anyone who wants them back.
 CLAUDE_DEFAULT_FIELDS: tuple[str, ...] = tuple(
-    seg for seg in SEGMENT_IDS if seg not in ("five_hour", "weekly")
+    seg for seg in SEGMENT_IDS if seg not in ("five_hour", "weekly", "project")
 )
 
 GROK_DEFAULT_FIELDS: tuple[str, ...] = GROK_FIELD_IDS
@@ -103,7 +96,7 @@ DEFAULTS: dict[str, list[str]] = {
 
 
 def migrate_codex_worktree_field(path: Path | None = None) -> bool:
-    """Ensure existing Codex-style selections show the active worktree.
+    """Strip removed project/branch tokens from existing Codex-style selections.
 
     Args:
         path: Optional ``field-selections.json`` path. When omitted, use the
@@ -112,10 +105,14 @@ def migrate_codex_worktree_field(path: Path | None = None) -> bool:
     Returns:
         ``True`` when one or more selections were updated, otherwise ``False``.
 
-    The migration is intentionally narrow. It replaces the repository's
-    previous exact rich default (which displayed ``git-branch``) and adds the
-    new worktree field to branchless selections. A user who explicitly kept
-    ``git-branch`` is left untouched so custom field choices remain stable.
+    The Codex status line no longer shows the active worktree (``current-dir``),
+    the project-root basename (``project-name``), or the git branch
+    (``git-branch``); that identity is moved to the Kitty window title instead.
+    Any existing selection carrying one of those tokens is rewritten without it,
+    so a stale inline display never reappears after the field is removed. Unlike
+    the previous worktree-first migration, this one does NOT re-add
+    ``current-dir`` — the TUI status line is meant to be rid of the worktree
+    display entirely.
     """
     path = path or selection_path()
     if not path.exists():
@@ -125,27 +122,25 @@ def migrate_codex_worktree_field(path: Path | None = None) -> bool:
     changed = False
     for agent in CODEX_STYLE_AGENTS:
         fields = list(document.get(agent, DEFAULTS[agent]))
-        if fields == list(LEGACY_CODEX_DEFAULT_FIELDS):
-            replacement = list(CODEX_DEFAULT_FIELDS)
-        elif (
-            "project-name" not in fields
-            and "git-branch" not in fields
-            and "current-dir" in fields
-        ):
-            current_dir_index = fields.index("current-dir")
-            replacement = [
-                *fields[: current_dir_index + 1],
-                "project-name",
-                *fields[current_dir_index + 1 :],
-            ]
-        else:
+        stripped = [token for token in fields if token not in REMOVED_CODEX_DISPLAY_TOKENS]
+        if stripped == fields:
             continue
-        document[agent] = replacement
+        removed = sorted(set(fields) - set(stripped))
+        added = sorted(set(stripped) - set(fields))
+        notes = []
+        if removed:
+            notes.append("removed " + ", ".join(removed))
+        if added:
+            notes.append("added " + ", ".join(added))
+        logger.info(
+            "migrated %s Codex status selection: %s in %s",
+            agent, "; ".join(notes), path,
+        )
+        document[agent] = stripped
         changed = True
 
     if changed:
         save_document(document, path)
-        logger.info("migrated Codex status selections to project-name in %s", path)
     return changed
 
 
@@ -235,7 +230,6 @@ def label_for_field(agent: str, field_id: str) -> str:
     if agent == "claude":
         return {
             "model": "Model + reasoning effort",
-            "project": "Repository / workspace",
             "context": "Context window",
             "five_hour": "5-hour rate limit",
             "weekly": "Weekly rate limit",

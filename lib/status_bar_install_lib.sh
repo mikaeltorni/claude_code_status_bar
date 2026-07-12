@@ -74,8 +74,8 @@ status_bar_cline_preview_status() {
 _sb_write_codex_tokens() {
   local config="$1" agent="${2:-codex}"
   local tokens
-  # Existing installs keep their field selections, so migrate only the
-  # Codex-style defaults that predate the project-name/worktree item. Keep this
+  # Existing installs keep their field selections, but strip the removed
+  # project-name/git-branch tokens so a stale display cannot reappear. Keep this
   # in the shared write path so a single-client install repairs that client too.
   run_as_target python3 "$REPO_DIR/agent_field_selection.py" migrate "$(_sb_selection_path)"
   tokens="$(python3 "$REPO_DIR/agent_field_selection.py" get "$agent" "$(_sb_selection_path)")"
