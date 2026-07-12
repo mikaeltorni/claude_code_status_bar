@@ -49,9 +49,7 @@ These map to `[tui] status_line` in Codex-style `config.toml` files (documented 
 | Token | Label |
 | ----- | ----- |
 | `model-with-reasoning` | Model + reasoning effort |
-| `current-dir` | Current directory |
-| `project-name` | Project / active worktree name |
-| `git-branch` | Git branch |
+| `current-dir` | Current directory (active worktree) |
 | `context-remaining` | Context remaining |
 | `five-hour-limit` | 5-hour rate limit |
 | `weekly-limit` | Weekly rate limit |
@@ -64,16 +62,33 @@ These map to `[tui] status_line` in Codex-style `config.toml` files (documented 
 | `total-input-tokens` | Total input tokens |
 | `total-output-tokens` | Total output tokens |
 
-**Default Codex selection:** `model-with-reasoning`, `current-dir`,
-`project-name`, `context-remaining`, `branch-changes`, `used-tokens`,
-`total-input-tokens`, and `total-output-tokens`. `project-name` is Codex's
-project-root basename, so linked worktrees appear by name in the TUI just as
-Claude Code's project segment does. The Git branch, rate-limit, run-state,
-context-used, version, and pull-request fields remain selectable but are off
-by default.
+> **Removed from the Codex status line:** the project-root basename
+> (`project-name`) and the Git branch (`git-branch`) are no longer part of the
+> Codex TUI status line. They were removed to keep the active worktree identity
+> (`current-dir`) uncluttered; neither token is selectable anymore. This affects
+> only the Codex-style instances (Codex, Qwen, OpenRouter, NVIDIA). Claude Code's
+> `project` segment is unchanged.
+| `five-hour-limit` | 5-hour rate limit |
+| `weekly-limit` | Weekly rate limit |
+| `run-state` | Run state |
+| `context-used` | Context used |
+| `codex-version` | Codex version |
+| `pull-request-number` | Pull request number |
+| `branch-changes` | Branch changes |
+| `used-tokens` | Used tokens |
+| `total-input-tokens` | Total input tokens |
+| `total-output-tokens` | Total output tokens |
 
-**Default Qwen selection:** the same rich default as Codex, including the
-active worktree name.
+**Default Codex selection:** `model-with-reasoning`, `current-dir`,
+`context-remaining`, `branch-changes`, `used-tokens`, `total-input-tokens`, and
+`total-output-tokens`. The active worktree is shown by `current-dir` (the
+worktree directory path), which is the value that distinguishes one linked
+worktree from another; the project-root basename and the Git branch have been
+removed from the status line entirely. The rate-limit, run-state, context-used,
+version, and pull-request fields remain selectable but are off by default.
+
+**Default Qwen selection:** the same rich default as Codex (no worktree or
+project inline; identity is in the Kitty window title).
 
 ## Claude Code segments
 

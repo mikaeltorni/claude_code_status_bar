@@ -27,10 +27,11 @@ FULL_PAYLOAD = {
 def test_none_selection_renders_every_segment(monkeypatch):
     monkeypatch.setattr(status_bar_render, "enabled_segments", lambda: None)
     line = status_bar_render.build_status_line(FULL_PAYLOAD)
-    assert line.count("|") == 7  # eight segments => seven separators
+    assert line.count("|") == 6  # seven segments => six separators
     assert "in:63.2k out:5.1k" in line
     assert "Opus · low" in line
-    assert "claude_code_status_bar" in line
+    # The project segment is removed, so the project path must not appear.
+    assert "claude_code_status_bar" not in line
     assert "$1.42" in line
 
 
@@ -48,8 +49,10 @@ def test_subset_selection_renders_only_those_segments_in_order(monkeypatch):
     assert line == "Opus · low | $1.42"
 
 
-def test_disabled_segment_is_omitted_even_when_data_present(monkeypatch):
-    enabled = set(status_bar_render.SEGMENT_IDS) - {"project"}
+def test_removed_project_segment_is_never_rendered(monkeypatch):
+    # "project" is no longer a segment id; a stale selection referencing it is
+    # ignored, so the project path must never appear in the bar.
+    enabled = set(status_bar_render.SEGMENT_IDS)
     monkeypatch.setattr(status_bar_render, "enabled_segments", lambda: enabled)
     line = status_bar_render.build_status_line(FULL_PAYLOAD)
     assert "claude_code_status_bar" not in line

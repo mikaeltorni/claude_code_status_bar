@@ -1,7 +1,7 @@
 """status_bar_config.py - segment selection for the Claude Code status bar.
 
 The status bar is assembled from independently selectable *segments* (model,
-project, context window, rate limits, diff count, total cost). Which segments
+context window, rate limits, diff count, total cost). Which segments
 appear is chosen at install time by the component-based installer, which writes
 the selection to a config file next to the installed modules. At render time
 this module reports which segments are enabled so unselected ones are omitted.
@@ -39,7 +39,6 @@ logger = get_logger(__name__)
 # status_bar_render.py and the installer manifest in installer/components.sh.
 SEGMENT_IDS: tuple[str, ...] = (
     "model",
-    "project",
     "context",
     "five_hour",
     "weekly",

@@ -12,10 +12,19 @@ from agent_tui_catalog import (
 )
 
 
-def test_project_name_is_the_default_codex_worktree_field():
-    """Codex defaults use its project-root/worktree name instead of ``master``."""
-    assert "project-name" in CODEX_FIELD_IDS
-    assert "project-name" in CODEX_DEFAULT_FIELDS
+def test_codex_default_drops_worktree_project_and_branch():
+    """Codex status line omits the worktree, project, and branch entirely.
+
+    The worktree (``current-dir``), the project-root basename (``project-name``),
+    and the git branch (``git-branch``) are removed from the Codex status line;
+    that identity now lives in the Kitty window title instead. None of those
+    tokens exist in the catalog or its defaults.
+    """
+    assert "current-dir" not in CODEX_FIELD_IDS
+    assert "current-dir" not in CODEX_DEFAULT_FIELDS
+    assert "project-name" not in CODEX_FIELD_IDS
+    assert "git-branch" not in CODEX_FIELD_IDS
+    assert "project-name" not in CODEX_DEFAULT_FIELDS
     assert "git-branch" not in CODEX_DEFAULT_FIELDS
 
 
@@ -33,9 +42,9 @@ def test_write_preserves_unrelated_toml_keys(tmp_path):
 
 def test_write_creates_tui_section_when_missing(tmp_path):
     config = tmp_path / "config.toml"
-    write_status_line_tokens(config, ["model-with-reasoning", "current-dir"])
+    write_status_line_tokens(config, ["model-with-reasoning", "context-remaining"])
     assert "[tui]" in config.read_text(encoding="utf-8")
-    assert read_status_line_tokens(config) == ["model-with-reasoning", "current-dir"]
+    assert read_status_line_tokens(config) == ["model-with-reasoning", "context-remaining"]
 
 
 def test_agent_tui_install_cli_round_trip(tmp_path):

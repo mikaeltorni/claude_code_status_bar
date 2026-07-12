@@ -52,7 +52,7 @@ class StatusBarCommandTests(unittest.TestCase):
         self.assertEqual(result.stderr, "")
         self.assertEqual(
             result.stdout,
-            "Opus · low | claude_code_status_bar | 63.2k/200.0k (31%)"
+            "Opus · low | 63.2k/200.0k (31%)"
             " | 5h:90% | wk:60% | +120/-8 | in:63.2k out:5.1k | $1.42\n",
         )
 
@@ -65,7 +65,7 @@ class StatusBarCommandTests(unittest.TestCase):
         result = run_status_bar(json.dumps(payload))
 
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "claude-test | fallback-project\n")
+        self.assertEqual(result.stdout, "claude-test\n")
 
     def test_renders_blank_line_for_empty_or_malformed_input(self):
         for payload in ("{}", "not json"):
