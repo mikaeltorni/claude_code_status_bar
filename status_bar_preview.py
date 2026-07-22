@@ -57,7 +57,7 @@ QWEN_FIXTURE: dict[str, str] = {
 
 OPENROUTER_FIXTURE: dict[str, str] = {
     **CODEX_FIXTURE,
-    "model-with-reasoning": "tencent/hy3:free · high",
+    "model-with-reasoning": "nvidia/nemotron-3-super-120b-a12b:free · high",
     "current-dir": "agent_command_center",
     "context-remaining": "42% ctx",
 }
