@@ -42,3 +42,19 @@ installer/components.sh        ISC_COMPONENTS manifest
 ## Preview behavior
 
 `status_bar_preview.py` builds fixture-based preview strings. `lib/status_bar_menu_hooks.sh` registers preview hooks on `cm_render_submenu` and `cm_render_aggregate` (via `status_bar_wrap_component_menu_preview()` in standalone install, and the master sources the same registrar). Preview rows render immediately above the help/footer line so help stays the absolute bottom line (matching `agent_field_configurator.py`); the aggregate main-menu preview lists one agent per line. Nested configurators render the same preview while fields are toggled.
+
+## Mandatory programming guidelines prompt
+
+Every agent task in this repository must load the shared
+`general-programming-guidelines` skill before the first file edit, using the
+harness-native invocation for the runtime in use:
+
+- Codex-family (`ca`, `qa`, `oa`, `na`, …): `$general-programming-guidelines`
+- Claude Code, Cline, Grok: `/general-programming-guidelines`
+- OpenCode: load `general-programming-guidelines` with the skill tool
+
+Agent Command Center prepends this bare invocation to every dispatched prompt, so the
+harness activates the skill before reading the task. When you start a task by hand, invoke it
+yourself first. Then follow its Work Loop — dedicated worktree branch before
+the first edit, tests, logging, documentation — and do not report the task done
+until its Definition of Done checklist passes.
