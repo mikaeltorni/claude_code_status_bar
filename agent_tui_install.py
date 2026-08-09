@@ -7,7 +7,11 @@ import json
 import sys
 from pathlib import Path
 
-from agent_tui_catalog import read_status_line_tokens, write_status_line_tokens
+from agent_tui_catalog import (
+    read_status_line_tokens,
+    remove_status_line,
+    write_status_line_tokens,
+)
 
 
 def configure_codex(path: Path, tokens: list[str] | None = None) -> None:
@@ -19,11 +23,24 @@ def configure_codex(path: Path, tokens: list[str] | None = None) -> None:
     write_status_line_tokens(path, tokens)
 
 
+def unconfigure_codex(path: Path) -> bool:
+    """Remove this repo's status-line configuration from a Codex-style config.
+
+    Args:
+        path: Path to the agent's ``config.toml``; a missing file is tolerated.
+
+    Returns:
+        bool: ``True`` when a ``status_line`` assignment was removed, ``False``
+        when the config had none (uninstall is then a no-op).
+    """
+    return remove_status_line(path)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if len(args) < 2:
         print(
-            "Usage: agent_tui_install.py {write|read} CONFIG_PATH [JSON tokens]",
+            "Usage: agent_tui_install.py {write|read|remove} CONFIG_PATH [JSON tokens]",
             file=sys.stderr,
         )
         return 2
@@ -40,6 +57,9 @@ def main(argv: list[str] | None = None) -> int:
     if command == "read":
         tokens = read_status_line_tokens(config_path)
         print(json.dumps(tokens if tokens is not None else []))
+        return 0
+    if command == "remove":
+        unconfigure_codex(config_path)
         return 0
     print(f"Unknown command: {command}", file=sys.stderr)
     return 2

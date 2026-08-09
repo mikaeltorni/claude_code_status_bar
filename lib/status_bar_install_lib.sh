@@ -203,6 +203,75 @@ detect_cline_tui() {
   run_as_target bash -lc 'command -v cline >/dev/null'
 }
 
+# --- Uninstall paths -------------------------------------------------------
+# Each component's uninstall removes ONLY what its install added, leaving the
+# agent's own config (and every other component's wiring) intact. Uninstalling
+# something that was never installed is a logged no-op, never an error.
+
+_sb_remove_codex_tokens() {
+  # Drop the status_line assignment from one Codex-style config.toml.
+  local config="$1"
+  if [[ ! -f "$config" ]]; then
+    msg "No config at $config; nothing to unwire"
+    return 0
+  fi
+  run_as_target python3 "$REPO_DIR/agent_tui_install.py" remove "$config"
+}
+
+status_bar_uninstall_codex() {
+  local config
+  for config in "$TARGET_HOME/.codex/config.toml" "$TARGET_HOME/.codex-api/config.toml"; do
+    _sb_remove_codex_tokens "$config"
+  done
+  msg "Removed Codex TUI status bar wiring (~/.codex and ~/.codex-api)"
+}
+
+status_bar_uninstall_qwen() {
+  _sb_remove_codex_tokens "$TARGET_HOME/.codex-qwen/config.toml"
+  msg "Removed Qwen (local Codex) TUI status bar wiring (~/.codex-qwen)"
+}
+
+status_bar_uninstall_openrouter() {
+  _sb_remove_codex_tokens "$TARGET_HOME/.codex-openrouter/config.toml"
+  msg "Removed OpenRouter (Codex) TUI status bar wiring (~/.codex-openrouter)"
+}
+
+status_bar_uninstall_nvidia() {
+  _sb_remove_codex_tokens "$TARGET_HOME/.codex-nvidia/config.toml"
+  msg "Removed NVIDIA (Codex) TUI status bar wiring (~/.codex-nvidia)"
+}
+
+status_bar_uninstall_claude() {
+  # Unwire statusLine first so Claude never points at a script we delete next.
+  local claude_dir module modules=(
+    status_bar_format.py
+    status_bar_render.py
+    status_bar_logging.py
+    status_bar_config.py
+    status_bar_install.py
+  )
+  claude_dir="$(_sb_claude_dir)"
+  if [[ -f "$claude_dir/settings.json" ]]; then
+    run_as_target python3 "$REPO_DIR/status_bar_install.py" --remove "$claude_dir/settings.json"
+  fi
+  run_as_target rm -f "$claude_dir/claude-status-bar"
+  for module in "${modules[@]}"; do
+    run_as_target rm -f "$claude_dir/$module"
+  done
+  # The user's segment config is their data: leave *.conf in place.
+  msg "Removed Claude Code status bar script, modules and statusLine wiring"
+}
+
+status_bar_uninstall_grok() {
+  # Grok's rich TUI belongs to the Grok CLI itself; we only ever printed a
+  # message, so there is nothing of ours to remove.
+  msg "Grok TUI is native to the Grok CLI; nothing installed by this repo to remove"
+}
+
+status_bar_uninstall_cline() {
+  msg "Cline TUI is native to the Cline CLI; nothing installed by this repo to remove"
+}
+
 # Register shared menu preview hooks (submenu + aggregate).
 status_bar_wrap_component_menu_preview() {
   # shellcheck source=lib/status_bar_menu_hooks.sh

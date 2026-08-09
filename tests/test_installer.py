@@ -126,3 +126,62 @@ def test_reselect_replaces_previous_segment_choice(tmp_path):
     )
     run_install(tmp_path, "--select", "claude_tui")
     assert read_segments(tmp_path) == ["context"]
+
+def test_every_component_declares_an_uninstall_function(tmp_path):
+    """No component may be install-only: each entry names an uninstall hook.
+
+    A component the user can deselect must also be removable, otherwise
+    "optional" only means "optional on a fresh machine".
+    """
+    manifest = (REPO_ROOT / "installer" / "components.sh").read_text(encoding="utf-8")
+    lib = (REPO_ROOT / "lib" / "status_bar_install_lib.sh").read_text(encoding="utf-8")
+    entries = [
+        line.strip().strip('"')
+        for line in manifest.splitlines()
+        if line.strip().startswith('"') and "|" in line
+    ]
+    assert entries, "no manifest entries parsed"
+    for entry in entries:
+        fields = entry.split("|")
+        component_id, uninstall_fn = fields[0], fields[5]
+        assert uninstall_fn, f"{component_id} declares no uninstall function"
+        assert f"{uninstall_fn}()" in lib, f"{uninstall_fn} is not defined in the lib"
+
+
+def test_uninstall_codex_removes_status_line_and_keeps_other_keys(tmp_path):
+    """Uninstalling the Codex bar clears status_line but preserves the config."""
+    config = tmp_path / ".codex" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text('approval_policy = "never"\n', encoding="utf-8")
+    assert run_install(tmp_path, "--select", "codex_tui").returncode == 0
+    assert "status_line" in config.read_text(encoding="utf-8")
+
+    result = run_install(tmp_path, "--uninstall", "codex_tui")
+    assert result.returncode == 0, result.stderr
+    text = config.read_text(encoding="utf-8")
+    assert "status_line" not in text
+    assert 'approval_policy = "never"' in text
+
+
+def test_uninstall_claude_removes_status_line_wiring(tmp_path):
+    """Uninstalling the Claude bar unwires statusLine and removes the script."""
+    claude = tmp_path / ".claude"
+    claude.mkdir(parents=True)
+    (claude / "settings.json").write_text(json.dumps({"theme": "dark"}) + "\n", encoding="utf-8")
+    assert run_install(tmp_path, "--select", "claude_tui").returncode == 0
+    assert (claude / "claude-status-bar").exists()
+
+    result = run_install(tmp_path, "--uninstall", "claude_tui")
+    assert result.returncode == 0, result.stderr
+    settings = json.loads((claude / "settings.json").read_text(encoding="utf-8"))
+    assert "statusLine" not in settings
+    assert settings["theme"] == "dark", "unrelated Claude settings must survive"
+    assert not (claude / "claude-status-bar").exists()
+    assert not (claude / "status_bar_render.py").exists()
+
+
+def test_uninstall_is_idempotent_on_a_clean_home(tmp_path):
+    """Uninstalling something that was never installed is a safe no-op."""
+    result = run_install(tmp_path, "--uninstall", "codex_tui")
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / ".codex").exists()
