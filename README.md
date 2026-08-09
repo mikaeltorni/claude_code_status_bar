@@ -137,6 +137,24 @@ bash install.sh --list-configurable-components
 sudo bash install.sh --default
 ```
 
+### Uninstalling
+
+Every component is individually removable — nothing here is a one-way install:
+
+```bash
+# Remove one or more agent displays
+bash install.sh --uninstall codex_tui,claude_tui
+```
+
+Each uninstall removes **only** what this repo added: the `[tui] status_line`
+assignment in the Codex-style `config.toml` (all other keys, comments and
+tables are preserved byte-for-byte, and a `[tui]` table left empty is dropped),
+or Claude Code's `statusLine` key plus the installed `claude-status-bar` script
+and its Python modules under `~/.claude`. Your own segment configuration
+(`~/.claude/claude-status-bar.conf`) and every unrelated setting are left in
+place. Grok and Cline render natively from their own CLIs, so their uninstall is
+a reported no-op. Uninstalling a component that was never installed is safe.
+
 | Variable | Default | Purpose |
 | -------- | ------- | ------- |
 | `TARGET_USER` | `$SUDO_USER` or `$USER` | User whose agent homes are configured |

@@ -150,3 +150,50 @@ def write_status_line_tokens(path: Path, tokens: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     path.chmod(0o600)
+
+
+def remove_status_line(path: Path) -> bool:
+    """Delete ``[tui] status_line`` from a Codex-style config, preserving the rest.
+
+    This is the uninstall counterpart of :func:`write_status_line_tokens`. Only
+    the ``status_line`` assignment is dropped; every other key, comment, and
+    table in the file is left byte-identical. A ``[tui]`` table that becomes
+    empty as a result is removed too, so an uninstalled agent leaves no
+    half-configured section behind.
+
+    Args:
+        path: Path to the agent's ``config.toml``. A missing file is tolerated.
+
+    Returns:
+        bool: ``True`` when a ``status_line`` assignment was found and removed
+        (the file was rewritten), ``False`` when there was nothing to do — a
+        missing file or a config without the key. Callers use this to keep
+        uninstall output honest and idempotent.
+    """
+    if not path.exists():
+        return False
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    start = next((i for i, line in enumerate(lines) if line.strip() == "[tui]"), None)
+    if start is None:
+        return False
+    end = next(
+        (i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("[")),
+        len(lines),
+    )
+    item = next(
+        (
+            i
+            for i in range(start + 1, end)
+            if lines[i].split("#", 1)[0].partition("=")[0].strip() == "status_line"
+        ),
+        None,
+    )
+    if item is None:
+        return False
+    del lines[item]
+    # Drop a now-empty [tui] table (blank lines only) so nothing dangles.
+    if not any(line.strip() for line in lines[start + 1 : end - 1]):
+        del lines[start : end - 1]
+    path.write_text("".join(lines), encoding="utf-8")
+    path.chmod(0o600)
+    return True
