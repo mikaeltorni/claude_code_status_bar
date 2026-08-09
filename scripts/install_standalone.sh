@@ -60,8 +60,11 @@ main() {
   msg "Status bar setup complete."
 }
 
-case "${1:-}" in
-  --list-components|--list-configurable-components|--list-component-config-values|--configure-component|--configure-component=*|--detect|--help|-h) component_main "$@"; exit $? ;;
-esac
+# Side-effect-free flags must print only their own output. Delegate to the
+# framework helper instead of a hand-maintained list: the local list omitted
+# --uninstall and --export-selection, so an uninstall fell through to main()
+# and wrapped itself in "Installing agent TUI status bars" / "Status bar setup
+# complete." The helper also matches a flag anywhere in argv, not just argv[1].
+if isc_route_readonly_args "$@"; then exit $?; fi
 
 main "$@"
