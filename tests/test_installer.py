@@ -58,6 +58,36 @@ def test_list_components_is_side_effect_free(tmp_path):
     assert not (tmp_path / ".claude").exists()
 
 
+def test_framework_resolves_without_home_projects_path(tmp_path):
+    """The sibling checkout must resolve from the script's own location.
+
+    ``install.sh`` finds the shared framework next to its own checkout, but the
+    loader then re-resolves helper modules on its own. If that second lookup
+    depends on ``$HOME/projects`` instead of the already-found directory, the
+    installer breaks for anyone whose checkout is not under ``~/projects`` (and
+    for root/sudo runs, where ``$HOME`` changes). Pin the regression by running
+    with a scratch ``HOME`` and no ``ISC_FUNCTIONS_DIR`` hint.
+    """
+    env_home = tmp_path / "scratch-home"
+    env_home.mkdir()
+    env = dict(os.environ)
+    env.pop("ISC_FUNCTIONS_DIR", None)
+    env["HOME"] = str(env_home)
+    env["TARGET_USER"] = env.get("USER", "")
+    env["TARGET_HOME"] = str(tmp_path / "target")
+    result = subprocess.run(
+        ["bash", str(INSTALL_SH), "--list-components"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+        stdin=subprocess.DEVNULL,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "could not resolve installer helpers" not in result.stderr
+    assert "codex_tui" in result.stdout
+
+
 def test_default_install_installs_claude_core_and_default_segments(tmp_path):
     result = run_install(tmp_path, "--default")
     assert result.returncode == 0, result.stderr
