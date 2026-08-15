@@ -32,6 +32,7 @@ def test_configure_status_line_preserves_unrelated_settings(tmp_path):
     assert settings["statusLine"] == {
         "type": "command",
         "command": f"python3 {tmp_path / '.claude' / 'claude-status-bar'}",
+        "refreshInterval": mod.STATUS_LINE_REFRESH_INTERVAL_SECONDS,
     }
 
 
@@ -44,6 +45,98 @@ def test_configure_status_line_quotes_paths_with_spaces(tmp_path):
 
     settings = json.loads(settings_file.read_text(encoding="utf-8"))
     assert settings["statusLine"]["command"] == f"python3 '{status_script}'"
+    assert settings["statusLine"]["refreshInterval"] == mod.STATUS_LINE_REFRESH_INTERVAL_SECONDS
+
+
+def test_ensure_project_trust_sets_has_trust_dialog_accepted(tmp_path):
+    """Claude Code skips statusLine until the workspace is trusted."""
+    mod = load_module()
+    project = tmp_path / "phrase_automation"
+    project.mkdir()
+    claude_json = tmp_path / ".claude.json"
+    claude_json.write_text(
+        json.dumps(
+            {
+                "projects": {
+                    str(project): {
+                        "allowedTools": [],
+                        "hasTrustDialogAccepted": False,
+                        "projectOnboardingSeenCount": 1,
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    changed = mod.ensure_project_trust(claude_json, project)
+
+    assert changed is True
+    data = json.loads(claude_json.read_text(encoding="utf-8"))
+    entry = data["projects"][str(project.resolve())]
+    assert entry["hasTrustDialogAccepted"] is True
+    assert entry["projectOnboardingSeenCount"] == 1
+
+
+def test_ensure_project_trust_is_idempotent(tmp_path):
+    mod = load_module()
+    project = tmp_path / "installation_scripts"
+    project.mkdir()
+    claude_json = tmp_path / ".claude.json"
+    key = str(project.resolve())
+    claude_json.write_text(
+        json.dumps({"projects": {key: {"hasTrustDialogAccepted": True}}}),
+        encoding="utf-8",
+    )
+
+    assert mod.ensure_project_trust(claude_json, project) is False
+    data = json.loads(claude_json.read_text(encoding="utf-8"))
+    assert data["projects"][key]["hasTrustDialogAccepted"] is True
+
+
+def test_ensure_known_projects_trust_only_updates_existing_paths(tmp_path):
+    mod = load_module()
+    present = tmp_path / "present_repo"
+    present.mkdir()
+    missing = tmp_path / "missing_repo"
+    claude_json = tmp_path / ".claude.json"
+    claude_json.write_text(
+        json.dumps(
+            {
+                "projects": {
+                    str(present): {"hasTrustDialogAccepted": False},
+                    str(missing): {"hasTrustDialogAccepted": False},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    updated = mod.ensure_known_projects_trust(claude_json)
+
+    assert str(present.resolve()) in updated
+    assert str(missing.resolve()) not in updated
+    data = json.loads(claude_json.read_text(encoding="utf-8"))
+    assert data["projects"][str(present.resolve())]["hasTrustDialogAccepted"] is True
+    # Missing path key is left as-is (may use unresolved form).
+    missing_entry = next(
+        v for k, v in data["projects"].items() if k.endswith("missing_repo")
+    )
+    assert missing_entry["hasTrustDialogAccepted"] is False
+
+
+def test_main_ensure_trust_cli(tmp_path):
+    mod = load_module()
+    project = tmp_path / "repo"
+    project.mkdir()
+    claude_json = tmp_path / ".claude.json"
+    claude_json.write_text(json.dumps({"projects": {}}), encoding="utf-8")
+
+    code = mod.main(["--ensure-trust", str(claude_json), str(project)])
+
+    assert code == 0
+    data = json.loads(claude_json.read_text(encoding="utf-8"))
+    assert data["projects"][str(project.resolve())]["hasTrustDialogAccepted"] is True
 
 
 def test_install_shell_delegates_settings_write_to_python_module():

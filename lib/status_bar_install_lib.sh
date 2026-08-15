@@ -162,6 +162,17 @@ status_bar_install_claude_core() {
 
   run_as_target python3 "$claude_dir/status_bar_install.py" "$settings_file" "$status_script"
   msg "Wired statusLine into $settings_file (cca)"
+
+  # Claude Code skips statusLine entirely when workspace trust is not accepted
+  # for the session git root. Accept trust for every project path already
+  # recorded in ~/.claude.json that still exists on disk so the bar is not a
+  # silent blank after install/reinstall (non-interactive equivalent of the
+  # first-run trust dialog).
+  local claude_json="$TARGET_HOME/.claude.json"
+  if [[ -f "$claude_json" ]]; then
+    run_as_target python3 "$claude_dir/status_bar_install.py" --ensure-known-trust "$claude_json"
+    msg "Ensured Claude workspace trust for known projects in $claude_json"
+  fi
 }
 
 status_bar_install_claude() {

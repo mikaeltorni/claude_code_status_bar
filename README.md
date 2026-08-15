@@ -166,6 +166,29 @@ After editing the Claude renderer, sync the installed copy:
 bash install.sh --select claude_tui
 ```
 
+### Troubleshooting: blank Claude status line
+
+Claude Code **does not run** the `statusLine` command when workspace trust has
+not been accepted for that project's git root (parent-folder trust does not
+cross into a separate repository). The installed script never gets stdin, so the
+bottom bar only shows `bypass permissions on`.
+
+The installer marks every existing path under `~/.claude.json` → `projects` as
+trusted (`hasTrustDialogAccepted: true`) when you install/reconfigure
+`claude_tui`. For a single new repo without reinstalling:
+
+```bash
+python3 ~/.claude/status_bar_install.py --ensure-trust ~/.claude.json /path/to/repo
+```
+
+Then continue the session (or start a new one) so the bar refreshes. Smoke-test
+the installed entry point:
+
+```bash
+printf '%s' '{"model":{"display_name":"Opus"},"context_window":{"total_input_tokens":1000,"context_window_size":200000,"used_percentage":1}}' \
+  | python3 ~/.claude/claude-status-bar
+```
+
 ## Repository dependencies
 
 This repository installs and runs **standalone**. It is consumed by `linux_programming_setup` in the master chain; that is a one-way relationship.
