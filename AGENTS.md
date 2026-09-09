@@ -12,11 +12,11 @@ bash install.sh --select claude_tui
 
 Then smoke-test the installed copy by piping a sample JSON payload to `~/.claude/claude-status-bar`.
 
-## Five-agent TUI ownership
+## Agent TUI ownership
 
-This repository owns display setup for all five agents in menu order: Codex (`ca`), Qwen (`qa`), Claude Code (`cca`), Grok (`ga`), and Cline (`cla`). Each agent is one top-level component with a `configure_fn` nested field screen and a `config_status_fn` preview snippet.
+This repository owns display setup for the agent TUIs in menu order: Codex (`ca`), Qwen (`qa`), OpenRouter (`oa`), NVIDIA (`na`/`nvi`), Claude Code (`cca`), Grok (`ga`), and Cline (`cla`). Each agent is one top-level component with a `configure_fn` nested field screen and a `config_status_fn` preview snippet.
 
-- **Codex + Qwen** share `agent_tui_catalog.py` / `agent_tui_install.py` for `[tui] status_line` TOML upserts. Codex writes both `~/.codex` and `~/.codex-api`.
+- **Codex + Qwen + OpenRouter + NVIDIA** share `agent_tui_catalog.py` / `agent_tui_install.py` for `[tui] status_line` TOML upserts. Codex writes both `~/.codex` and `~/.codex-api`.
 - **Claude Code** uses `status_bar_render.py` and `claude-status-bar`; segment ids live in `status_bar_config.SEGMENT_IDS`.
 - **Grok + Cline** are verify/document-only: no unsupported `config.toml` keys are invented.
 

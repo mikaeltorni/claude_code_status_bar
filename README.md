@@ -2,15 +2,17 @@
 
 > Part of [installation_scripts](https://github.com/mikaeltorni/installation_scripts) — the master installer that orchestrates a productivity-focused Ubuntu 24.04 desktop setup (workspaces, hotkeys, window tiling, programming tools, and more). Tested on Ubuntu 24.04.4 LTS.
 
-A shared **agent TUI display** repository for all five coding-agent CLIs used in this setup chain. Despite the repository name, it owns status-bar and rich-TUI configuration for **Codex**, **Qwen (local Codex)**, **Claude Code**, **Grok**, and **Cline** — not Claude Code alone.
+A shared **agent TUI display** repository for the coding-agent CLIs used in this setup chain. Despite the repository name, it owns status-bar and rich-TUI configuration for **Codex**, **Qwen (local Codex)**, **OpenRouter Codex**, **NVIDIA Codex**, **Claude Code**, **Grok**, and **Cline** — not Claude Code alone.
 
-The master installer runs this repository immediately after the CLI installer. Its component menu lists the five agents in this order:
+The master installer runs this repository immediately after the CLI installer. Its component menu lists the agents in this order:
 
 1. **Codex** (`codex_tui`) — `ca`
 2. **Qwen (local Codex)** (`qwen_tui`) — `qa`
-3. **Claude Code** (`claude_tui`) — `cca`
-4. **Grok** (`grok_tui`) — `ga`
-5. **Cline** (`cline_tui`) — `cla`
+3. **OpenRouter (Codex)** (`openrouter_tui`) — `oa`
+4. **NVIDIA (Codex)** (`nvidia_tui`) — `na` / `nvi`
+5. **Claude Code** (`claude_tui`) — `cca`
+6. **Grok** (`grok_tui`) — `ga`
+7. **Cline** (`cline_tui`) — `cla`
 
 Press **RIGHT** on any row to open a nested field checklist. A **simulated status-bar preview** appears at the bottom of that screen and on the main component menu while a row is highlighted.
 
@@ -20,6 +22,8 @@ Press **RIGHT** on any row to open a nested field checklist. A **simulated statu
 | ----- | -------------- | ---------------------------------------- |
 | Codex | `ca` | `~/.codex/config.toml` **and** `~/.codex-api/config.toml` (`[tui] status_line`) |
 | Qwen (local Codex) | `qa` | `~/.codex-qwen/config.toml` (`[tui] status_line`) |
+| OpenRouter (Codex) | `oa` | `~/.codex-openrouter/config.toml` (`[tui] status_line`) |
+| NVIDIA (Codex) | `na` / `nvi` | `~/.codex-nvidia/config.toml` (`[tui] status_line`) |
 | Claude Code | `cca` | `~/.claude/claude-status-bar.conf` + `statusLine` in `~/.claude/settings.json` |
 | Grok | `ga` | Native rich TUI only — **no** writable `status_line` key in `~/.grok/config.toml` |
 | Cline | `cla` | Native rich TUI only — **no** external status-line settings API |
