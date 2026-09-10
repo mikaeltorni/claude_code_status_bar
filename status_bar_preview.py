@@ -1,4 +1,4 @@
-"""Simulated status-bar previews for all five agent TUIs."""
+"""Simulated status-bar previews for every agent TUI."""
 
 from __future__ import annotations
 
@@ -145,7 +145,7 @@ AGGREGATE_AGENT_LABELS: tuple[tuple[str, str], ...] = (
 
 
 def preview_all_agents(target_home: Path | None = None) -> str:
-    """Return a multi-line summary of all five agent previews (menu order)."""
+    """Return a multi-line summary of every agent preview (menu order)."""
     parts: list[str] = []
     for agent, label in AGGREGATE_AGENT_LABELS:
         line = preview_for_agent(agent, target_home=target_home)

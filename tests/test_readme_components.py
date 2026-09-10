@@ -33,3 +33,6 @@ def test_readme_names_every_manifest_component() -> None:
         assert f"`{component_id}`" in readme, f"README omits {component_id}"
     assert "OpenRouter (`oa`)" in agents
     assert "NVIDIA (`na`/`nvi`)" in agents
+    assert "Five-agent" not in readme
+    assert "five-agent" not in (ROOT / "installer" / "components.sh").read_text(encoding="utf-8")
+    assert "five-agent" not in (ROOT / "lib" / "status_bar_install_lib.sh").read_text(encoding="utf-8")
