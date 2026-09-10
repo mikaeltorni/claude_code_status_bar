@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# status_bar_install_lib.sh - install-step functions for the five-agent status bar.
+# status_bar_install_lib.sh - install-step functions for the agent TUI status bars.
 
 _sb_claude_dir()   { printf '%s/.claude' "$TARGET_HOME"; }
 _sb_config_path()  { printf '%s/.claude/claude-status-bar.conf' "$TARGET_HOME"; }

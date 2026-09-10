@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# components.sh - Five-agent TUI status-bar manifest for claude_code_status_bar.
+# components.sh - Agent TUI status-bar manifest for claude_code_status_bar.
 #
 # Entry: id|label|default|install_fn[|detect|uninstall|section|requires|configure_fn|config_status_fn]
 # Order: Codex, Qwen (local Codex), Claude Code, Grok, Cline.

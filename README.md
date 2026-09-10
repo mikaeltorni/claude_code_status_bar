@@ -206,13 +206,13 @@ claude-status-bar              Claude JSON stdin → stdout command
 status_bar_render.py           Per-segment registry + assembly
 status_bar_format.py           Token and reset-time formatting
 status_bar_config.py           Claude segment selection
-status_bar_preview.py          Simulated previews for all five agents
+status_bar_preview.py          Simulated previews for every agent TUI
 agent_tui_catalog.py           Shared Codex/Qwen token catalog + TOML writer
 agent_field_selection.py       Per-agent field-selection persistence
 agent_field_configurator.py    Nested checklist TUI with live preview
 agent_tui_install.py           Codex/Qwen TOML install helper
 status_bar_segment_install.py  Claude segment config writer
-installer/components.sh        Five-agent component manifest
+installer/components.sh        Agent TUI component manifest
 lib/status_bar_install_lib.sh  Install/configure/detect functions
 ```
 
