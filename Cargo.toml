@@ -1,0 +1,13 @@
+[package]
+name = "claude-status-bar"
+version = "0.1.0"
+edition = "2021"
+description = "Claude Code status-line renderer"
+
+[[bin]]
+name = "claude-status-bar"
+path = "src/main.rs"
+
+[dependencies]
+chrono = "0.4"
+serde_json = "1"

@@ -18,6 +18,34 @@ _sb_ensure_selection_defaults() {
   fi
 }
 
+# Build claude-status-bar in the source checkout.
+# run_as_target rewrites HOME to TARGET_HOME, which hides rustup's default
+# toolchain. Use the invoker's cargo when it is already on PATH. Bootstrap
+# Rust into TARGET_HOME only when cargo is missing.
+_sb_build_claude_status_bar() {
+  if command -v cargo >/dev/null 2>&1; then
+    cargo build --manifest-path "$REPO_DIR/Cargo.toml" --locked --release
+    return
+  fi
+  local build_path bootstrap
+  build_path="$TARGET_HOME/.cargo/bin:$PATH"
+  if ! run_as_target env PATH="$build_path" CARGO_HOME="$TARGET_HOME/.cargo" \
+      RUSTUP_HOME="$TARGET_HOME/.rustup" sh -c 'command -v cargo >/dev/null'; then
+    bootstrap=$(mktemp)
+    curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs -o "$bootstrap"
+    chmod 644 "$bootstrap"
+    if ! run_as_target env CARGO_HOME="$TARGET_HOME/.cargo" RUSTUP_HOME="$TARGET_HOME/.rustup" \
+        sh "$bootstrap" -y --profile minimal --no-modify-path; then
+      rm -f "$bootstrap"
+      return 1
+    fi
+    rm -f "$bootstrap"
+  fi
+  run_as_target env PATH="$build_path" CARGO_HOME="$TARGET_HOME/.cargo" \
+    RUSTUP_HOME="$TARGET_HOME/.rustup" \
+    cargo build --manifest-path "$REPO_DIR/Cargo.toml" --locked --release
+}
+
 # status_bar_configure_*_fields - nested configurators (configure_fn).
 status_bar_configure_codex_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" \
@@ -146,6 +174,11 @@ status_bar_install_claude_core() {
     msg "ERROR: missing status bar source: $source_script"
     return 1
   fi
+  if ! _sb_build_claude_status_bar; then
+    msg "ERROR: Rust status bar build failed"
+    return 1
+  fi
+  source_script="$REPO_DIR/target/release/claude-status-bar"
   for module in "${modules[@]}"; do
     if [[ ! -f "$REPO_DIR/$module" ]]; then
       msg "ERROR: missing status bar module: $REPO_DIR/$module"

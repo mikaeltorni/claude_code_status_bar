@@ -31,7 +31,7 @@ def test_configure_status_line_preserves_unrelated_settings(tmp_path):
     assert settings["theme"] == "dark"
     assert settings["statusLine"] == {
         "type": "command",
-        "command": f"python3 {tmp_path / '.claude' / 'claude-status-bar'}",
+        "command": f"{tmp_path / '.claude' / 'claude-status-bar'}",
         "refreshInterval": mod.STATUS_LINE_REFRESH_INTERVAL_SECONDS,
     }
 
@@ -44,7 +44,7 @@ def test_configure_status_line_quotes_paths_with_spaces(tmp_path):
     mod.configure_status_line(settings_file, status_script)
 
     settings = json.loads(settings_file.read_text(encoding="utf-8"))
-    assert settings["statusLine"]["command"] == f"python3 '{status_script}'"
+    assert settings["statusLine"]["command"] == f"'{status_script}'"
     assert settings["statusLine"]["refreshInterval"] == mod.STATUS_LINE_REFRESH_INTERVAL_SECONDS
 
 
@@ -152,6 +152,22 @@ def test_install_shell_delegates_settings_write_to_python_module():
     assert "status_bar_install.py" in combined
     assert "python3 - <<'PY'" not in combined
     assert "<<'PY'" not in combined
+
+
+def test_claude_status_bar_build_keeps_existing_rustup_toolchain():
+    """The release build must see an already installed rustup toolchain.
+
+    Parameters: none.
+
+    Returns: None.
+    """
+    print("parameters=none")
+    text = (ROOT / "lib" / "status_bar_install_lib.sh").read_text(encoding="utf-8")
+    assert "command -v cargo" in text
+    assert 'CARGO_HOME="$TARGET_HOME/.cargo"' in text
+    assert 'RUSTUP_HOME="$TARGET_HOME/.rustup"' in text
+    assert "--locked" in text
+    print(None)
 
 
 def test_readonly_flags_route_through_the_shared_framework_helper():

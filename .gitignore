@@ -9,6 +9,9 @@ claude-status-bar.conf
 __pycache__/
 *.pyc
 
+# Rust build output.
+/target/
+
 # BEGIN programming-prompts-cursor (managed by linux_programming_setup)
 # Managed copies from programming_prompts — do not ignore other .cursor/skills/*
 .cursor/skills/programming-prompts/

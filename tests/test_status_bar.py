@@ -13,7 +13,7 @@ STATUS_BAR = REPO_ROOT / "claude-status-bar"
 def run_status_bar(payload: str) -> subprocess.CompletedProcess[str]:
     """Run the status-bar executable with raw stdin content."""
     return subprocess.run(
-        ["python3", str(STATUS_BAR)],
+        [str(STATUS_BAR)],
         input=payload,
         capture_output=True,
         check=False,
