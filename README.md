@@ -203,6 +203,7 @@ See [installation_scripts/DEPENDENCIES.md](https://github.com/mikaeltorni/instal
 
 ```text
 claude-status-bar              Rust JSON stdin → stdout command (Cargo.toml, src/)
+status-bar-tools               Rust field, preview, tui, segment, and settings commands
 status_bar_render.py           Python preview helper; the installed bar is the Rust binary
 status_bar_format.py           Python formatting helper kept for the preview path
 status_bar_config.py           Claude segment selection

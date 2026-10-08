@@ -3,9 +3,15 @@
 
 _sb_claude_dir()   { printf '%s/.claude' "$TARGET_HOME"; }
 _sb_config_path()  { printf '%s/.claude/claude-status-bar.conf' "$TARGET_HOME"; }
-_sb_config_module(){ printf '%s/status_bar_config.py' "$REPO_DIR"; }
+_sb_tools() {
+  if [ -z "${_SB_TOOLS_BUILT:-}" ]; then
+    _sb_build_claude_status_bar || return 1
+    _SB_TOOLS_BUILT=1
+  fi
+  printf '%s\n' "$REPO_DIR/target/release/status-bar-tools"
+}
 _sb_selection_path() {
-  python3 "$REPO_DIR/agent_field_selection.py" path "$TARGET_HOME"
+  "$(_sb_tools)" field path "$TARGET_HOME"
 }
 
 # Materialize default field selections so ACC and later re-runs share one file.
@@ -14,7 +20,7 @@ _sb_ensure_selection_defaults() {
   path="$(_sb_selection_path)"
   if ! run_as_target test -f "$path"; then
     run_as_target mkdir -p "$(dirname "$path")"
-    run_as_target python3 "$REPO_DIR/agent_field_selection.py" init "$TARGET_HOME"
+    run_as_target "$(_sb_tools)" field init "$TARGET_HOME"
   fi
 }
 
@@ -48,55 +54,48 @@ _sb_build_claude_status_bar() {
 
 # status_bar_configure_*_fields - nested configurators (configure_fn).
 status_bar_configure_codex_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" codex "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure codex "$TARGET_HOME"
 }
 status_bar_configure_qwen_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" qwen "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure qwen "$TARGET_HOME"
 }
 status_bar_configure_openrouter_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" openrouter "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure openrouter "$TARGET_HOME"
 }
 status_bar_configure_nvidia_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" nvidia "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure nvidia "$TARGET_HOME"
 }
 status_bar_configure_claude_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" claude "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure claude "$TARGET_HOME"
 }
 status_bar_configure_grok_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" grok "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure grok "$TARGET_HOME"
 }
 status_bar_configure_cline_fields() {
-  run_as_target env TARGET_HOME="$TARGET_HOME" \
-    python3 "$REPO_DIR/agent_field_configurator.py" cline "$TARGET_HOME"
+  run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure cline "$TARGET_HOME"
 }
 
 # config_status_fn previews for the main component menu.
 status_bar_codex_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component codex_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component codex_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_qwen_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component qwen_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component qwen_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_openrouter_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component openrouter_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component openrouter_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_nvidia_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component nvidia_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component nvidia_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_claude_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component claude_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component claude_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_grok_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component grok_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component grok_tui "$TARGET_HOME" 2>/dev/null || true
 }
 status_bar_cline_preview_status() {
-  python3 "$REPO_DIR/status_bar_preview.py" component cline_tui "$TARGET_HOME" 2>/dev/null || true
+  "$(_sb_tools)" preview component cline_tui "$TARGET_HOME" 2>/dev/null || true
 }
 
 _sb_write_codex_tokens() {
@@ -106,9 +105,9 @@ _sb_write_codex_tokens() {
   # project-name/git-branch tokens so a stale display cannot reappear while the
   # worktree path (current-dir) is preserved. Keep this in the shared write path
   # so a single-client install repairs that client too.
-  run_as_target python3 "$REPO_DIR/agent_field_selection.py" migrate "$(_sb_selection_path)"
-  tokens="$(python3 "$REPO_DIR/agent_field_selection.py" get "$agent" "$(_sb_selection_path)")"
-  run_as_target python3 "$REPO_DIR/agent_tui_install.py" write "$config" "$tokens"
+  run_as_target "$(_sb_tools)" field migrate "$(_sb_selection_path)"
+  tokens="$("$(_sb_tools)" field get "$agent" "$(_sb_selection_path)")"
+  run_as_target "$(_sb_tools)" tui write "$config" "$tokens"
 }
 
 status_bar_install_codex() {
@@ -193,7 +192,7 @@ status_bar_install_claude_core() {
   done
   msg "Installed status bar script and modules to $claude_dir"
 
-  run_as_target python3 "$claude_dir/status_bar_install.py" "$settings_file" "$status_script"
+  run_as_target "$(_sb_tools)" settings "$settings_file" "$status_script"
   msg "Wired statusLine into $settings_file (cca)"
 
   # Claude Code skips statusLine entirely when workspace trust is not accepted
@@ -203,7 +202,7 @@ status_bar_install_claude_core() {
   # first-run trust dialog).
   local claude_json="$TARGET_HOME/.claude.json"
   if [[ -f "$claude_json" ]]; then
-    run_as_target python3 "$claude_dir/status_bar_install.py" --ensure-known-trust "$claude_json"
+    run_as_target "$(_sb_tools)" settings --ensure-known-trust "$claude_json"
     msg "Ensured Claude workspace trust for known projects in $claude_json"
   fi
 }
@@ -211,10 +210,10 @@ status_bar_install_claude_core() {
 status_bar_install_claude() {
   local segments config_path
   status_bar_install_claude_core || return $?
-  segments="$(python3 "$REPO_DIR/agent_field_selection.py" get claude "$(_sb_selection_path)")"
+  segments="$("$(_sb_tools)" field get claude "$(_sb_selection_path)")"
   config_path="$(_sb_config_path)"
-  run_as_target python3 "$(_sb_config_module)" init "$config_path"
-  run_as_target python3 "$REPO_DIR/status_bar_segment_install.py" "$config_path" "$segments"
+  run_as_target "$(_sb_tools)" config init "$config_path"
+  run_as_target "$(_sb_tools)" segment "$config_path" "$segments"
   msg "Enabled Claude Code status-bar segments at $config_path"
 }
 
@@ -259,7 +258,7 @@ _sb_remove_codex_tokens() {
     msg "No config at $config; nothing to unwire"
     return 0
   fi
-  run_as_target python3 "$REPO_DIR/agent_tui_install.py" remove "$config"
+  run_as_target "$(_sb_tools)" tui remove "$config"
 }
 
 status_bar_uninstall_codex() {
@@ -296,7 +295,7 @@ status_bar_uninstall_claude() {
   )
   claude_dir="$(_sb_claude_dir)"
   if [[ -f "$claude_dir/settings.json" ]]; then
-    run_as_target python3 "$REPO_DIR/status_bar_install.py" --remove "$claude_dir/settings.json"
+    run_as_target "$(_sb_tools)" settings --remove "$claude_dir/settings.json"
   fi
   run_as_target rm -f "$claude_dir/claude-status-bar"
   for module in "${modules[@]}"; do
