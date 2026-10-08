@@ -55,7 +55,7 @@ def configure_status_line(settings_file: Path, status_script: Path) -> None:
     """Set Claude Code's statusLine command while preserving unrelated keys.
 
     Reads any existing settings, overwrites only the ``statusLine`` key with a
-    command that runs ``status_script`` via ``python3``, and writes the merged
+    command that runs the installed ``status_script`` executable, and writes the merged
     result back (creating parent directories as needed). This is idempotent and
     non-destructive: re-running it leaves every other setting untouched.
 
@@ -70,7 +70,7 @@ def configure_status_line(settings_file: Path, status_script: Path) -> None:
     settings = _read_settings(settings_file)
     settings["statusLine"] = {
         "type": "command",
-        "command": f"python3 {shlex.quote(str(status_script))}",
+        "command": shlex.quote(str(status_script)),
         "refreshInterval": STATUS_LINE_REFRESH_INTERVAL_SECONDS,
     }
     settings_file.parent.mkdir(parents=True, exist_ok=True)

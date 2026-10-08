@@ -190,7 +190,7 @@ the installed entry point:
 
 ```bash
 printf '%s' '{"model":{"display_name":"Opus"},"context_window":{"total_input_tokens":1000,"context_window_size":200000,"used_percentage":1}}' \
-  | python3 ~/.claude/claude-status-bar
+  | ~/.claude/claude-status-bar
 ```
 
 ## Repository dependencies
@@ -202,9 +202,9 @@ See [installation_scripts/DEPENDENCIES.md](https://github.com/mikaeltorni/instal
 ## Development layout
 
 ```text
-claude-status-bar              Claude JSON stdin → stdout command
-status_bar_render.py           Per-segment registry + assembly
-status_bar_format.py           Token and reset-time formatting
+claude-status-bar              Rust JSON stdin → stdout command (Cargo.toml, src/)
+status_bar_render.py           Python preview helper; the installed bar is the Rust binary
+status_bar_format.py           Python formatting helper kept for the preview path
 status_bar_config.py           Claude segment selection
 status_bar_preview.py          Simulated previews for every agent TUI
 agent_tui_catalog.py           Shared Codex/Qwen token catalog + TOML writer
@@ -219,6 +219,7 @@ lib/status_bar_install_lib.sh  Install/configure/detect functions
 Run tests:
 
 ```bash
+cargo test --quiet
 python3 -m pytest -q
 ```
 
@@ -226,7 +227,7 @@ Pipe a sample Claude payload:
 
 ```bash
 echo '{"model":{"display_name":"Opus"},"workspace":{"project_dir":"/work/claude_code_status_bar"}}' \
-  | python3 claude-status-bar
+  | ./claude-status-bar
 ```
 
 ## License

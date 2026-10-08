@@ -54,8 +54,20 @@ def test_write_qwen_config_toml_uses_status_bar_selections(tmp_path):
 
 
 def test_acc_postflight_reapplies_status_bar_install():
+    """Check that ACC re-applies the status-bar TUI configs after install.
+
+    Parameters: none.
+
+    Returns: None.
+    """
+    print("parameters=none")
+    if not (ACC_ROOT / "installer" / "components.sh").exists():
+        import pytest
+
+        pytest.skip("agent_command_center sibling checkout not available")
     components = (ACC_ROOT / "installer" / "components.sh").read_text(encoding="utf-8")
     coord = (ACC_ROOT / "lib" / "status_bar_coordination.sh").read_text(encoding="utf-8")
     assert "acc_reapply_status_bar_tui_configs" in coord
     assert "acc_reapply_status_bar_tui_configs" in components
     assert "codex_tui,qwen_tui" in coord
+    print(None)

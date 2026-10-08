@@ -1,50 +1,11 @@
-#!/usr/bin/env python3
-"""Claude Code status bar script.
-
-Claude Code invokes this with the status-line JSON on stdin and renders the
-first line printed to stdout in the bottom bar (next to "bypass permissions on").
-
-Bar layout:
-    model + reasoning effort | repository name | context-window usage |
-    5h rate limit | weekly rate limit | diff count | total cost
-
-Logging:
-    The bar must print exactly one line to stdout, so logging is opt-in and
-    routed to a file, never stdout/stderr. Set CLAUDE_STATUS_BAR_DEBUG=1 to
-    record diagnostics (e.g. malformed input) under ``<script-dir>/.log/`` via
-    the centralized ``status_bar_logging`` utility.
-"""
-
-import json
-import sys
-
-from status_bar_logging import get_logger, log_call
-from status_bar_render import build_status_line
-
-logger = get_logger(__name__)
-
-
-@log_call(logger)
-def main() -> None:
-    """Read the status-line payload from stdin and print the rendered bar.
-
-    Reads a single JSON object from stdin (as supplied by Claude Code), renders
-    it via :func:`status_bar_render.build_status_line`, and prints exactly one
-    line to stdout. Malformed or empty input is logged (when debugging is
-    enabled) and treated as an empty payload, yielding a blank bar rather than
-    an error.
-
-    Returns:
-        None.
-    """
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError, ValueError) as exc:
-        logger.warning("failed to parse status-line JSON from stdin: %r", exc)
-        data = {}
-
-    print(build_status_line(data))
-
-
-if __name__ == "__main__":
-    main()
+#!/bin/sh
+# Launch the Rust status-line binary from a source checkout.
+# The installer copies target/release/claude-status-bar itself into ~/.claude.
+dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+for candidate in "$dir/target/release/claude-status-bar" "$dir/target/debug/claude-status-bar"; do
+    if [ -x "$candidate" ]; then
+        exec "$candidate" "$@"
+    fi
+done
+printf 'claude-status-bar is not built. Run cargo build --release in %s\n' "$dir" >&2
+exit 1
