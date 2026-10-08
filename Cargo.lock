@@ -57,6 +57,7 @@ name = "claude-status-bar"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "libc",
  "serde_json",
 ]
 

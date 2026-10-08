@@ -4,10 +4,12 @@
 //! function. `run` only dispatches.
 
 use crate::render::{build_status_line, Selection, SEGMENT_IDS};
+use crate::field_terminal::{self, Key, RawTerminal};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::env;
 use std::fs;
+use std::io::{self, IsTerminal, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
@@ -109,16 +111,19 @@ fn parse(args: &[String]) -> Result<Command, String> {
     }
 }
 
+/// Parse all field commands before dispatch, including complete configure arity.
+/// Parameters: args - raw field subcommand tokens.
+/// Returns: parsed field operation or usage error.
 fn parse_field(args: &[String]) -> Result<Command, String> {
     let command = args.first().ok_or_else(|| "usage: status-bar-tools field COMMAND".to_string())?;
     match command.as_str() {
         "path" => Ok(Command::FieldPath { home: field_home(args) }),
         "init" => Ok(Command::FieldInit { home: args.get(1).cloned() }),
         "migrate" => Ok(Command::FieldMigrate { path: args.get(1).cloned() }),
-        "configure" => Ok(Command::FieldConfigure {
-            agent: args.get(1).cloned().ok_or_else(|| "field configure needs an agent".to_string())?,
-            home: args.get(2).cloned(),
+        "configure" if (2..=3).contains(&args.len()) => Ok(Command::FieldConfigure {
+            agent: args[1].clone(), home: args.get(2).cloned(),
         }),
+        "configure" => Err("usage: status-bar-tools field configure AGENT [HOME]".into()),
         "get" => Ok(Command::FieldGet {
             agent: args.get(1).cloned().ok_or_else(|| "field get needs an agent".to_string())?,
             path: path_arg(args),
@@ -177,13 +182,19 @@ fn parse_settings(args: &[String]) -> Result<Command, String> {
     }
 }
 
+/// Dispatch parsed operations and report their output or failure status.
+/// Parameters: command - fully parsed tool operation.
+/// Returns: process exit status, including silent checklist cancellation.
 fn execute(command: Command) -> i32 {
     let result = match command {
         Command::FieldPath { home } => Ok(format!("{}\n", selection_path(home.as_deref()).display())),
         Command::FieldInit { home } => init_fields(home.as_deref()).map(|_| String::new()),
         Command::FieldGet { agent, path } => Ok(format!("{}\n", json_array(&fields_for(&agent, path.as_deref())))),
         Command::FieldMigrate { path } => migrate(path.as_deref()).map(|_| String::new()),
-        Command::FieldConfigure { agent, home } => configure_fields(&agent, home.as_deref()).map(|_| String::new()),
+        Command::FieldConfigure { agent, home } => return match configure_fields(&agent, home.as_deref()) {
+            Ok(code) => code,
+            Err(message) => { eprintln!("{message}"); 1 },
+        },
         Command::FieldToml { agent, home } => Ok(format!("{}\n", toml_array(&fields_for(&agent, home.as_deref().map(selection_file).as_deref())))),
         Command::PreviewComponent { id, home } => Ok(format!("{}\n", preview_component(&id, home.as_deref()))),
         Command::PreviewAggregate { home } => Ok(format!("{}\n", preview_aggregate(home.as_deref()))),
@@ -326,13 +337,129 @@ fn fields_for(agent: &str, path: Option<&str>) -> Vec<String> {
         .unwrap_or_else(|| defaults_for(agent))
 }
 
-fn configure_fields(agent: &str, home: Option<&str>) -> Result<(), String> {
+/// Select the existing canonical field catalog for one supported agent.
+/// Parameters: agent - normalized supported agent identifier.
+/// Returns: field identifiers in canonical display order.
+fn field_catalog(agent: &str) -> &'static [&'static str] {
+    match agent {
+        "codex" | "qwen" | "openrouter" | "nvidia" => &CODEX_FIELDS,
+        "claude" => &SEGMENT_IDS,
+        "grok" => &GROK_FIELDS,
+        "cline" => &CLINE_FIELDS,
+        _ => &[],
+    }
+}
+
+/// Resolve the original checklist labels from canonical field identifiers.
+/// Parameters: field - canonical field identifier.
+/// Returns: the human-readable label, or the identifier for an unknown field.
+fn field_label(field: &str) -> &str {
+    match field {
+        "model-with-reasoning" | "model" => "Model + reasoning effort",
+        "current-dir" => "Current directory (active worktree)",
+        "context-remaining" => "Context remaining",
+        "five-hour-limit" | "five_hour" => "5-hour rate limit",
+        "weekly-limit" | "weekly" => "Weekly rate limit",
+        "run-state" => "Run state",
+        "context-used" => "Context used",
+        "codex-version" => "Codex version",
+        "pull-request-number" => "Pull request number",
+        "branch-changes" => "Branch changes",
+        "used-tokens" => "Used tokens",
+        "total-input-tokens" => "Total input tokens",
+        "total-output-tokens" => "Total output tokens",
+        "project" => "Repository / workspace",
+        "context" => "Context window",
+        "diff" => "Diff line count",
+        "tokens" => "Token in/out counts",
+        "cost" => "Session cost",
+        "working-directory" => "Working directory",
+        "session-state" => "Session / turn state",
+        "context-usage" => "Context usage",
+        "tool-activity" => "Tool activity indicator",
+        "workspace" => "Workspace / project",
+        "context-window" => "Context window usage",
+        "session-cost" => "Session cost",
+        "diff-stats" => "Diff line statistics",
+        other => other,
+    }
+}
+
+/// Draw the field rows, current preview and footer in their original order.
+/// Parameters: agent - normalized agent; row - focused row; fields - current selections.
+/// Returns: None on success or a terminal output error.
+fn render_field_menu(agent: &str, row: usize, fields: &[String]) -> Result<(), String> {
+    let title = match agent {
+        "codex" => "Codex status bar fields",
+        "qwen" => "Qwen (local Codex) status bar fields",
+        "claude" => "Claude Code status bar segments",
+        "grok" => "Grok native TUI display (reference)",
+        "cline" => "Cline native TUI display (reference)",
+        other => other,
+    };
+    let mut screen = format!("\x1b[2J\x1b[H  {title}\n");
+    if matches!(agent, "grok" | "cline") {
+        screen.push_str("  Grok/Cline expose no writable status_line keys; toggles affect preview only.\n\n");
+    } else {
+        screen.push_str("  Toggle fields with SPACE. ENTER saves, q cancels.\n\n");
+    }
+    for (index, field) in field_catalog(agent).iter().enumerate() {
+        let mark = if row == index { "›" } else { " " };
+        let box_mark = if fields.iter().any(|selected| selected == field) { "[x]" } else { "[ ]" };
+        let label = if *field == "model" && matches!(agent, "grok" | "cline") { "Active model" } else { field_label(field) };
+        screen.push_str(&format!("   {mark} {box_mark} {label}\n"));
+    }
+    let preview = preview_agent(agent, fields);
+    let preview = if preview.is_empty() { "(empty)" } else { &preview };
+    screen.push_str(&format!("\n  Preview: {preview}\n\n  [↑/↓] move  [space] toggle  [enter] save  [q] cancel\n"));
+    // Raw mode disables output newline conversion; emit explicit terminal CRLF.
+    io::stdout().write_all(screen.replace('\n', "\r\n").as_bytes()).map_err(|err| err.to_string())?;
+    io::stdout().flush().map_err(|err| err.to_string())
+}
+
+/// Run the interactive checklist or retain silent non-TTY materialization.
+/// Parameters: agent - agent/component selector; home - optional target home.
+/// Returns: zero after save, one on cancellation, or an operation error.
+fn configure_fields(agent: &str, home: Option<&str>) -> Result<i32, String> {
     let agent = component_agent(agent).to_string();
+    if !AGENTS.contains(&agent.as_str()) {
+        return Err(format!("unknown field agent: {agent}"));
+    }
     let path = selection_path(home);
-    let fields = fields_for(&agent, Some(&path.display().to_string()));
+    let mut fields = fields_for(&agent, Some(&path.display().to_string()));
     let mut doc = load_document(Some(&path.display().to_string()));
-    doc.insert(agent, json!(fields));
-    save_document(&doc, &path)
+    if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
+        doc.insert(agent, json!(fields));
+        save_document(&doc, &path)?;
+        return Ok(0);
+    }
+    let _terminal = RawTerminal::enter()?;
+    let catalog = field_catalog(&agent);
+    let mut row = 0_usize;
+    loop {
+        render_field_menu(&agent, row, &fields)?;
+        match field_terminal::read_key()? {
+            Key::Up => row = row.saturating_sub(1),
+            Key::Down => row = (row + 1).min(catalog.len().saturating_sub(1)),
+            Key::Toggle => {
+                let field = catalog[row];
+                if fields.iter().any(|selected| selected == field) {
+                    fields.retain(|selected| selected != field);
+                } else {
+                    fields.push(field.to_string());
+                }
+                doc.insert(agent.clone(), json!(fields));
+                save_document(&doc, &path)?;
+            }
+            Key::Save => {
+                doc.insert(agent, json!(fields));
+                save_document(&doc, &path)?;
+                return Ok(0);
+            }
+            Key::Cancel => return Ok(1),
+            Key::Ignore => {},
+        }
+    }
 }
 
 fn migrate(path: Option<&str>) -> Result<(), String> {
