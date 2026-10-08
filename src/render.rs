@@ -35,6 +35,34 @@ impl Selection {
     }
 }
 
+/// Resolve the segment selection from the environment, then the config file.
+///
+/// Parameters: none. Reads `CLAUDE_STATUS_BAR_SEGMENTS` and `CLAUDE_STATUS_BAR_CONFIG`.
+///
+/// Returns: every segment, or the explicit subset.
+pub fn resolve_selection() -> Selection {
+    if let Ok(explicit) = std::env::var("CLAUDE_STATUS_BAR_SEGMENTS") {
+        let ids = explicit
+            .split(',')
+            .map(str::trim)
+            .filter(|token| SEGMENT_IDS.contains(token))
+            .map(str::to_string)
+            .collect();
+        return Selection::Only(ids);
+    }
+    let config = std::env::var_os("CLAUDE_STATUS_BAR_CONFIG")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::current_exe()
+                .ok()
+                .and_then(|path| path.parent().map(|dir| dir.join("claude-status-bar.conf")))
+        });
+    match config {
+        Some(path) => selection_from_config(&path),
+        None => Selection::All,
+    }
+}
+
 /// Read a segment config file. A missing file means every segment.
 pub fn selection_from_config(path: &Path) -> Selection {
     let raw = match fs::read_to_string(path) {

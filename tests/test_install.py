@@ -149,7 +149,8 @@ def test_install_shell_delegates_settings_write_to_python_module():
         ROOT / "lib" / "status_bar_install_lib.sh",
     ]
     combined = "\n".join(f.read_text(encoding="utf-8") for f in shell_files)
-    assert "status_bar_install.py" in combined
+    assert "status-bar-tools" in combined
+    assert "settings" in combined
     assert "python3 - <<'PY'" not in combined
     assert "<<'PY'" not in combined
 

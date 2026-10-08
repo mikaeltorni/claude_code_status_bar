@@ -42,7 +42,7 @@ status_bar_preview_text_for_submenu_row() {
   cm_comp_ids_for_repo "$repo" ids
   id="${ids[$sel]:-}"
   [[ -n "$id" ]] || return 0
-  python3 "$repo_dir/status_bar_preview.py" component "$id" "$target_home" 2>/dev/null || true
+  "$repo_dir/target/release/status-bar-tools" preview component "$id" "$target_home" 2>/dev/null || true
 }
 
 # Return combined preview text for the aggregate-menu repo highlight.
@@ -52,7 +52,7 @@ status_bar_preview_text_for_aggregate_repo() {
   [[ "$repo" == "claude_code_status_bar" ]] || return 0
   repo_dir="$(status_bar_repo_dir)" || return 0
   target_home="${TARGET_HOME:-${HOME}}"
-  python3 "$repo_dir/status_bar_preview.py" aggregate "$target_home" 2>/dev/null || true
+  "$repo_dir/target/release/status-bar-tools" preview aggregate "$target_home" 2>/dev/null || true
 }
 
 # Print preview then help, keeping help as the last screen line.
