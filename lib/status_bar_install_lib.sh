@@ -75,27 +75,86 @@ status_bar_configure_cline_fields() {
   run_as_target env TARGET_HOME="$TARGET_HOME" "$(_sb_tools)" field configure cline "$TARGET_HOME"
 }
 
-# config_status_fn previews for the main component menu.
+# Read an optional preview without compiling or installing during discovery.
+# Parameters: $1 - converted component identifier. Returns: zero and any available preview text.
+_sb_preview_status() {
+  printf 'component=%s\n' "$1" >&2
+  local tools="$REPO_DIR/target/release/status-bar-tools" result=""
+  if [[ -x "$tools" ]]; then result="$("$tools" preview component "$1" "$TARGET_HOME" 2>/dev/null || true)"; fi
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
+}
+
+# Expose codex's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_codex_preview_status() {
-  "$(_sb_tools)" preview component codex_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status codex_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
+# Expose qwen's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_qwen_preview_status() {
-  "$(_sb_tools)" preview component qwen_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status qwen_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
+# Expose openrouter's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_openrouter_preview_status() {
-  "$(_sb_tools)" preview component openrouter_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status openrouter_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
+# Expose nvidia's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_nvidia_preview_status() {
-  "$(_sb_tools)" preview component nvidia_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status nvidia_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
+# Expose claude's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_claude_preview_status() {
-  "$(_sb_tools)" preview component claude_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status claude_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
+# Expose grok's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_grok_preview_status() {
-  "$(_sb_tools)" preview component grok_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status grok_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
+# Expose cline's current optional menu preview.
+# Parameters: none. Returns: zero and the available preview text.
 status_bar_cline_preview_status() {
-  "$(_sb_tools)" preview component cline_tui "$TARGET_HOME" 2>/dev/null || true
+  printf 'parameters=none\n' >&2
+  local result
+  result="$(_sb_preview_status cline_tui)"
+  printf '%s' "$result"
+  printf '%s\n' "$result" >&2
+  return 0
 }
 
 _sb_write_codex_tokens() {
