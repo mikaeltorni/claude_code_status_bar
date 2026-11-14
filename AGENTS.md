@@ -2,9 +2,9 @@
 
 ## Status bar: apply edits to the installed copy too
 
-The source of truth is `claude-status-bar` (and its `status_bar_*.py` modules) in this repo, but Claude Code runs the **installed copy** under `~/.claude/`. Editing only the repo files will not change what shows in the status bar.
+The status-line renderer is implemented in `src/` and built as `target/release/claude-status-bar`; the root `claude-status-bar` script launches a build from the checkout. Python `status_bar_*.py` modules support previews and installation. Claude Code runs the **installed binary** under `~/.claude/`, so source edits need deployment to affect the live bar.
 
-**Always auto-apply**: after editing the script or any module, immediately sync the installed copy without waiting to be asked — changes are invisible in the live bar until installed. Also make sure any newly added segment id is enabled in `~/.claude/claude-status-bar.conf`, since an existing conf preserves the old segment selection.
+**Always auto-apply**: after editing the renderer or an installed module, immediately sync the installed copy without waiting to be asked — changes are invisible in the live bar until installed. Also make sure any newly added segment id is enabled in `~/.claude/claude-status-bar.conf`, since an existing conf preserves the old segment selection.
 
 ```bash
 bash install.sh --select claude_tui
