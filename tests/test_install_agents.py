@@ -7,18 +7,10 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from agent_tui_catalog import read_status_line_tokens
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INSTALL_SH = REPO_ROOT / "install.sh"
-FRAMEWORK = REPO_ROOT.parent / "linux_installation_scripts_functions"
-
-pytestmark = pytest.mark.skipif(
-    not (FRAMEWORK / "component_loader.sh").exists(),
-    reason="shared component framework not available as a sibling checkout",
-)
 
 
 def run_install(target_home: Path, *args: str) -> subprocess.CompletedProcess[str]:

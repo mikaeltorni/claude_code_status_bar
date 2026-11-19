@@ -3,8 +3,7 @@
 These run the real installer against a temporary ``TARGET_HOME`` (no sudo, no
 touching the developer's ~/.claude) and assert the standard component contract:
 listing is side-effect free, selection installs exactly the chosen segments, the
-core files land in place, and re-running is idempotent. They are skipped when the
-shared component framework is not resolvable as a sibling checkout.
+core files land in place, and re-running is idempotent with the bundled framework.
 """
 
 from __future__ import annotations
@@ -15,16 +14,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import pytest
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INSTALL_SH = REPO_ROOT / "install.sh"
-FRAMEWORK = REPO_ROOT.parent / "linux_installation_scripts_functions"
-
-pytestmark = pytest.mark.skipif(
-    not (FRAMEWORK / "component_loader.sh").exists(),
-    reason="shared component framework not available as a sibling checkout",
-)
 
 
 def run_install(target_home: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -59,19 +50,17 @@ def test_list_components_is_side_effect_free(tmp_path):
 
 
 def test_framework_resolves_without_home_projects_path(tmp_path):
-    """The sibling checkout must resolve from the script's own location.
+    """Discover components with bundled support in a clean home.
 
-    ``install.sh`` finds the shared framework next to its own checkout, but the
-    loader then re-resolves helper modules on its own. If that second lookup
-    depends on ``$HOME/projects`` instead of the already-found directory, the
-    installer breaks for anyone whose checkout is not under ``~/projects`` (and
-    for root/sudo runs, where ``$HOME`` changes). Pin the regression by running
-    with a scratch ``HOME`` and no ``ISC_FUNCTIONS_DIR`` hint.
+    Parameters: tmp_path - temporary target and launcher home.
+    Returns: None.
     """
+    print(f"tmp_path={tmp_path}")
     env_home = tmp_path / "scratch-home"
     env_home.mkdir()
     env = dict(os.environ)
     env.pop("ISC_FUNCTIONS_DIR", None)
+    env.pop("ISC_COMPONENT_LIB_DIR", None)
     env["HOME"] = str(env_home)
     env["TARGET_USER"] = env.get("USER", "")
     env["TARGET_HOME"] = str(tmp_path / "target")
@@ -86,6 +75,7 @@ def test_framework_resolves_without_home_projects_path(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "could not resolve installer helpers" not in result.stderr
     assert "codex_tui" in result.stdout
+    print(None)
 
 
 def test_default_install_installs_claude_core_and_default_segments(tmp_path):

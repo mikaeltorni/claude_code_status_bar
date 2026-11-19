@@ -7,17 +7,9 @@ import subprocess
 import textwrap
 from pathlib import Path
 
-import pytest
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS = REPO_ROOT / "lib" / "status_bar_menu_hooks.sh"
-FRAMEWORK = REPO_ROOT.parent / "linux_installation_scripts_functions"
-MENU = FRAMEWORK / "component_menu.sh"
-
-pytestmark = pytest.mark.skipif(
-    not MENU.exists(),
-    reason="shared component menu not available as a sibling checkout",
-)
+MENU = REPO_ROOT / ".installer-support" / "component_menu.sh"
 
 
 def _nonempty_lines(output: str) -> list[str]:
